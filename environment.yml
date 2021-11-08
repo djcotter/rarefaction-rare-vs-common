@@ -1,0 +1,10 @@
+name: snakemake_default
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.7
+  - snakemake
+  - bcftools
+  - tabix
