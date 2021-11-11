@@ -44,15 +44,14 @@ rule get_filtered_data:
     input:
         rename = path.join('data', 'ref_files', 'rename_chrs.txt')
     output:
-        out = path.join('data', '1kg_nygc_chr{chr}_biallelic.snps_filt.vcf.gz'),
-        temp_file = temp('CCDG_13607_B01_GRM_WGS_2019-02-19_chr{chr}.recalibrated_variants.vcf.gz')
+        out = path.join('data', '1kg_nygc_chr{chr}_biallelic.snps_filt.vcf.gz')
     params:
-        URL = lambda wildcards: path.join(config['data_path'],
-                                          'CCDG_13607_B01_GRM_WGS_2019-02-19_chr'
-                                          '{}.recalibrated_variants.vcf.gz'.format(wildcards.chr)),
+        data_path = lambda wildcards: path.join(config['data_path'],
+                                                'CCDG_13607_B01_GRM_WGS_2019-02-19_chr'
+                                                '{}.recalibrated_variants.vcf.gz'.format(wildcards.chr)),
         filter = "\'%FILTER==\"PASS\"\'"
     shell:
-        "bcftools view -Ou -v snps -m2 -M2 -i {params.filter} {params.URL} | "
+        "bcftools view -Ou -v snps -m2 -M2 -i {params.filter} {params.data_path} | "
         "bcftools annotate -Oz -x INFO,^FORMAT/GT --rename-chrs {input.rename} "
         "--set-id %POS > {output.out}"
 
