@@ -31,7 +31,7 @@ rule all:
                chr=CHROMS),
         path.join('data', 'individual_population_codes.txt')
 
-rule get_filtered_data:
+rule filter_raw_data:
     """
     This file runs bcftools and points at the FTP server for 1KGP data.
     bcftools view filters for SNPS (-v snps) that are biallelic (-m2 -M2) and that
