@@ -42,16 +42,14 @@ rule filter_raw_data:
     position (--set-id %POS).
     """
     input:
+        vcf = path.join(config['data_path'], 'CCDG_13607_B01_GRM_WGS_2019-02-19_chr{chr}.recalibrated_variants.vcf.gz'),
         rename = path.join('data', 'ref_files', 'rename_chrs.txt')
     output:
         out = path.join('data', '1kg_nygc_chr{chr}_biallelic.snps_filt.vcf.gz')
     params:
-        data_path = lambda wildcards: path.join(config['data_path'],
-                                                'CCDG_13607_B01_GRM_WGS_2019-02-19_chr'
-                                                '{}.recalibrated_variants.vcf.gz'.format(wildcards.chr)),
         filter = "\'%FILTER==\"PASS\"\'"
     shell:
-        "bcftools view -Ou -v snps -m2 -M2 -i {params.filter} {params.data_path} | "
+        "bcftools view -Ou -v snps -m2 -M2 -i {params.filter} {input.vcf} | "
         "bcftools annotate -Oz -x INFO,^FORMAT/GT --rename-chrs {input.rename} "
         "--set-id %POS > {output.out}"
 
