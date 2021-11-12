@@ -1,5 +1,5 @@
 # paths to relevant NYGC data files for 2504 individuals
-data_path: /data
+data_path: /data/1kg_data
 
 # population panel (2504 individuals from Phase 3 release)
 pop_panel: http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/integrated_call_samples_v3.20130502.ALL.panel
