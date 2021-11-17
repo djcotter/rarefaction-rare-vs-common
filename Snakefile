@@ -14,22 +14,29 @@ Requires:
 """
 
 # Import statements -----------------------------------------------------------
+import json
 from os import path
 
 # Global configurations -------------------------------------------------------
 # declare a path to the configuration file
 configfile: 'config.yml'
 
+# parse all population codes
+SUPERPOPULATIONS = sorted(json.load(open(config['POP_CODES']))['SUPERPOP'])
+POPULATIONS = sorted(json.load(open(config['POP_CODES']))['POP'])
+
+POP_LIST = ['ALL'] + SUPERPOPULATIONS  # + POPULATIONS
+
 # global variables
-CHROMS = [x for x in range(1, 23)]  # list from 1 to 22
+CHROMS = [x for x in range(22, 23)]  # list from 1 to 22
 
 # declare rules -------------------
 rule all:
     input:
         expand(path.join('data',
-                         '1kg_nygc_chr{chr}_biallelic.snps_filt.vcf.gz'),
-               chr=CHROMS),
-        path.join('data', 'individual_population_codes.txt')
+                         'allele_counts',
+                         'chr{CHR}_counts_{CAT}.txt'),
+               CHR=CHROMS, CAT=['pops', 'superpops'])
 
 rule filter_raw_data:
     """
@@ -42,10 +49,11 @@ rule filter_raw_data:
     position (--set-id %POS).
     """
     input:
-        vcf = path.join(config['data_path'], 'CCDG_13607_B01_GRM_WGS_2019-02-19_chr{chr}.recalibrated_variants.vcf.gz'),
+        vcf = path.join(config['data_path'],
+                        'CCDG_13607_B01_GRM_WGS_2019-02-19_chr{chr}.recalibrated_variants.vcf.gz'),
         rename = path.join('data', 'ref_files', 'rename_chrs.txt')
     output:
-        out = path.join('data', '1kg_nygc_chr{chr}_biallelic.snps_filt.vcf.gz')
+        out = path.join('data', 'tmp', '1kg_nygc_chr{chr}_biallelic.snps_filt.vcf.gz')
     params:
         filter = "\'%FILTER==\"PASS\"\'"
     shell:
@@ -61,6 +69,87 @@ rule get_pop_panel:
     params:
         URL = config['pop_panel']
     output:
-        path.join('data', 'individual_population_codes.txt')
+        path.join('data', 'tmp', 'individual_population_codes.txt')
     shell:
         "wget -O {output} {params.URL}"
+
+rule parse_populations:
+    """
+    This rule parses the list of 2504 individuals from phase3 of the 1000 genomes project.
+    It separates the file into 1 (ALL) + 5 (each superpopulation) + 26 (each population) lists
+    containing a 1 column file of the samples in each population or superpopulation
+    """
+    input:
+        path.join('data', 'tmp', 'individual_population_codes.txt')
+    params:
+        script = path.join('src', 'parse_populations.R')
+    output:
+        expand(path.join('data', 'pops', '{POP}_samples.txt'),
+               POP=POP_LIST)
+    shell:
+        "Rscript {params.script}"
+
+rule count_alleles:
+    """
+    This rule uses vcftools to count the number of alleles for ALL individuals and then
+    for each of the 5 superpopulations and 26 populations.
+    """
+    input:
+        vcf = path.join('data', 'tmp', '1kg_nygc_chr{chr}_biallelic.snps_filt.vcf.gz'),
+        samples = path.join('data', 'pops', '{population}_samples.txt')
+    params:
+        outpath = lambda wildcards: expand(path.join('data', 'tmp',
+                                                     '{POP}_chr{CHR}'),
+                                           POP=wildcards.population,
+                                           CHR=wildcards.chr)
+    output:
+        temp(path.join('data', 'tmp', '{population}_chr{chr}.frq.count'))
+    log:
+        temp(path.join('data', 'tmp', '{population}_chr{chr}.log'))
+    shell:
+        "vcftools --gzvcf {input.vcf} --keep {input.samples} "
+        "--counts --out {params.outpath}"
+
+rule merge_POP_allele_counts:
+    """
+    This rule takes the vcftools output for each POP and
+    assigns the globally minor allele then organizes the allele counts
+    into a single column in the format MINOR/MAJOR where minor and major are given in
+    columns 4 and 5 respectively. Columns 1-3 are chromosome, position, and total alleles.
+    Columns 6+ correspond to each POP's allele counts
+    """
+    input:
+        lambda wildcards: expand(
+            path.join('data', 'tmp', '{POP}_chr{CHR}.frq.count'),
+            POP=['ALL'] + POPULATIONS,
+            CHR=wildcards.chr
+        )
+    params:
+        script = path.join('src', 'merge_allele_counts.R'),
+        chr = lambda wildcards: wildcards.chr
+    output:
+        path.join('data', 'allele_counts', 'chr{chr}_counts_pops.txt')
+    shell:
+        "Rscript --vanilla {params.script} --pops --chr {params.chr}"
+
+rule merge_SUPERPOP_allele_counts:
+    """
+    This rule takes the vcftools output for each SUPERPOP and
+    assigns the globally minor allele then organizes the allele counts
+    into a single column in the format MINOR/MAJOR where minor and major are given in
+    columns 4 and 5 respectively. Columns 1-3 are chromosome, position, and total alleles.
+    Columns 6+ correspond to each SUPERPOP's allele counts
+    """
+    input:
+        lambda wildcards: expand(
+            path.join('data', 'tmp', '{POP}_chr{CHR}.frq.count'),
+            POP=['ALL'] + SUPERPOPULATIONS,
+            CHR=wildcards.chr
+        )
+    params:
+        script = path.join('src', 'merge_allele_counts.R'),
+        chr = lambda wildcards: wildcards.chr
+    output:
+        path.join('data', 'allele_counts', 'chr{chr}_counts_superpops.txt')
+    shell:
+        "Rscript --vanilla {params.script} --superpops --chr {params.chr}"

@@ -1,3 +1,6 @@
+# path to JSON file with population codes
+POP_CODES: populations.json
+
 # paths to relevant NYGC data files for 2504 individuals
 data_path: /data/1kg_data
 
