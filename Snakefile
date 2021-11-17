@@ -25,7 +25,7 @@ configfile: 'config.yml'
 SUPERPOPULATIONS = sorted(json.load(open(config['POP_CODES']))['SUPERPOP'])
 POPULATIONS = sorted(json.load(open(config['POP_CODES']))['POP'])
 
-POP_LIST = ['ALL'] + SUPERPOPULATIONS  # + POPULATIONS
+POP_LIST = ['ALL'] + SUPERPOPULATIONS + POPULATIONS
 
 # global variables
 CHROMS = [x for x in range(1, 23)]  # list from 1 to 22
