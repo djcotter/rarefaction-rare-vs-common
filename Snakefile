@@ -28,7 +28,7 @@ POPULATIONS = sorted(json.load(open(config['POP_CODES']))['POP'])
 POP_LIST = ['ALL'] + SUPERPOPULATIONS  # + POPULATIONS
 
 # global variables
-CHROMS = [x for x in range(22, 23)]  # list from 1 to 22
+CHROMS = [x for x in range(1, 23)]  # list from 1 to 22
 
 # declare rules -------------------
 rule all:
