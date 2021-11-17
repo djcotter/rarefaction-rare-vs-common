@@ -39,7 +39,7 @@ SUPERPOPS = opt$superpops
 CHR = paste('chr', opt$chr, sep="")
 
 ## read in population data -------
-pop_list <- read.table(file.path('data', 'individual_population_codes.txt'), header = TRUE) %>%
+pop_list <- read.table(file.path('data', 'tmp', 'individual_population_codes.txt'), header = TRUE) %>%
   select(-gender) %>% arrange(super_pop, pop)
 
 if (POPS) {

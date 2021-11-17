@@ -6,7 +6,7 @@
 suppressPackageStartupMessages(require(tidyverse))
 
 ## read in data -------
-df <- read.table(file.path('data', 'individual_population_codes.txt'), header = TRUE) %>%
+df <- read.table(file.path('data', 'tmp', 'individual_population_codes.txt'), header = TRUE) %>%
   select(-gender)
 
 ## get pop list -------
