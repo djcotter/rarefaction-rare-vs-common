@@ -36,7 +36,7 @@ rule all:
         expand(path.join('data',
                          'allele_counts',
                          'chr{CHR}_counts_{CAT}.txt'),
-               CHR=CHROMS, CAT=['pops', 'superpops'])
+               CHR=CHROMS, CAT=['superpops'])
 
 rule filter_raw_data:
     """
@@ -87,7 +87,7 @@ rule parse_populations:
         expand(path.join('data', 'pops', '{POP}_samples.txt'),
                POP=POP_LIST)
     shell:
-        "Rscript {params.script}"
+        "Rscript {params.script} --bid"
 
 rule count_alleles:
     """
