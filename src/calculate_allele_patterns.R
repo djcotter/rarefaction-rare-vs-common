@@ -13,13 +13,14 @@ pop_label = "superpops"
 CHR = 22
 g_list = seq(10,300,by = 10)
 z = 0.05
+DROP_SINGLETONS = FALSE
 
 ## read in superpop data -----
 df <- read.table(file.path('data', 'allele_counts', paste('chr', CHR, '_counts_', pop_label, '.txt', sep="")), header = TRUE)
 
 # temporarily subset the sample size down
 set.seed(1)
-df_sub <- df %>% sample_n(10000, replace=FALSE)
+df_sub <- df %>% sample_n(100000, replace=FALSE)
 df <- df_sub %>% tibble()
 
 df_long <- df %>% 
@@ -30,6 +31,24 @@ df_long <- df %>%
 
 # remove alleles for which there is no globally "minor" allele (i.e both = 50%)
 df_long <- df_long %>% filter(!is.na(minor))
+
+# drop non-biallelic sites
+drop <- df_long %>% 
+  group_by(pos) %>% 
+  summarise(tot_minor = sum(minor)) %>% 
+  filter(tot_minor==0) %>% 
+  pull(pos)
+df_long <- df_long %>% filter(!(pos %in% drop))
+
+# drop singletons if necessary
+if (DROP_SINGLETONS) {
+  drop1 <- df_long %>% 
+    group_by(pos) %>% 
+    summarise(tot_minor = sum(minor)) %>% 
+    filter(tot_minor==1) %>% 
+    pull(pos)
+  df_long <- df_long %>% filter(!(pos %in% drop1))
+}
 
 ## define functions to calculate the probability of (U)nobserved or (R)are -----
 # (C)ommon is defined by 1 - U - R
@@ -65,22 +84,38 @@ merge_codes <- function(..., log=FALSE) {
   return(data.frame(pattern=names, prob=products))
 }
 
+## grab the actual patterns for each locus
+actual_patterns <- df_long %>% 
+  mutate(freq=minor/(minor+major)) %>% 
+  mutate(code=ifelse(freq==0, 'U', ifelse(freq<0.05, 'R', 'C'))) %>% 
+  select(-c(tot_alleles, minor, major, freq)) %>% 
+  spread(pop, code) %>% 
+  mutate(pattern=paste(AFR, EUR, SAS, EAS, AMR, sep="")) %>% 
+  select(pos, pattern)
+
 ## calculate the three probabilites ----------
 df_all <- NULL
+df_match <- NULL
 
 for (i in 1:length(g_list)) {
   g = g_list[i]
+  print(g)
   df_probs <- df_long %>% mutate(U = round(U_prob(minor, major, g), 6), 
                                 R = round(R_prob(minor, major, g, z),6)) %>% 
-    mutate(C=1-R-U) %>% 
+    mutate(C=round(1-R-U, 6)) %>% 
+    mutate(C=sapply(C, function(x){ifelse(x<0,0,x)})) %>%
     select(-minor, -major) %>% 
     gather(cat, prob, R, U, C) %>% 
     spread(pop, prob) 
   
+  # filter for loci where N_j for any population is less than g and remove them
+  # (on chr22 only 115 loci have <300 for any given pop)
+  df_probs <- df_probs %>% filter(across(everything(), ~!is.na(.)))
+
   ## calculate probabilities for all patterns for each locus 
   df_probs <- df_probs %>% mutate(across(AFR:SAS, ~paste(cat, .x, sep="_"))) %>% 
     group_by(chr, pos, tot_alleles) %>% 
-    do(merge_codes(.$AFR, .$AMR, .$EAS, .$EUR, .$SAS)) # can we do this without hardcoding?
+    do(merge_codes(.$AFR, .$EUR, .$SAS, .$EAS, .$AMR)) # can we do this without hardcoding?
   
   df_patterns <- df_probs %>% spread(pattern, prob) %>% 
     group_by(chr) %>% 
@@ -91,35 +126,85 @@ for (i in 1:length(g_list)) {
   
   if (is.null(df_all)) {
     df_all <- df_patterns
-    next
+  } else {
+    df_all <- inner_join(df_all, df_patterns, by="pattern")
   }
   
-  df_all <- inner_join(df_all, df_patterns, by="pattern")
-
+  ## check if the most likely prob (sans UUUUU) matches the actual probability
+  df_rate <- df_probs %>% 
+    group_by(pos) %>% 
+    filter(pattern!='UUUUU') %>%
+    filter(prob==max(prob)) %>%
+    rename(pattern2=pattern) %>%
+    inner_join(actual_patterns, by="pos") %>%
+    mutate(match=(pattern==pattern2)) %>%
+    summarise(match=sum(match)) %>%
+    ungroup() %>%
+    summarise(match_rate=mean(match)) %>%
+    mutate(g=paste(g))
+  
+  if (is.null(df_match)) {
+    df_match <- df_rate
+  } else {
+    df_match <- rbind(df_match, df_rate)
+  }
 }
 
-keep <- df_all %>% filter(g==300) %>% filter(prob >= 0.01) %>% pull(pattern)
+df_all2 <- df_all
+
+## recolor the patterns for the plot 
+keep <- df_all2 %>% gather(g, prob, -pattern) %>% 
+  filter(g==300) %>% filter(prob >= 0.01) %>%
+  pull(pattern)
 recolor_patterns <- function(pattern, keep) {
   recolor <- ifelse(pattern %in% keep, pattern, 'other')
   return(data.frame(recolor=recolor))
 }
 
-df_plot <- df_all %>% 
+df_plot <- df_all2 %>% 
   gather(g, prob, -pattern) %>% 
   mutate(g=as.numeric(g)) %>%
   do(cbind(., recolor_patterns(.$pattern, keep)))
 
 
-#df_plot <- df_all %>% do(cbind(., recolor_patterns(.$pattern, keep)))
-  
-
-p <- ggplot(df_plot %>% mutate(recolor = fct_relevel(recolor, "other")),
+## plot pattern probabilities as a function of g
+p <- ggplot(df_plot %>% mutate(recolor = fct_reorder(recolor, prob)) %>%
+              mutate(recolor = fct_relevel(recolor, "other")),
             aes(x=g, y=prob, fill=recolor)) +
   geom_col(lwd=0.5) + scale_fill_brewer(palette = 'Set3') + 
   theme_pubr(legend = 'right')
 
 p
 
-ggsave(p, filename="~/Downloads/chr22_allele_patterns.pdf", width=7, height=4)
+ggsave(p, filename="/Users/danie/Downloads/chr22_allelePatterns.pdf", width=7, height=4)
 
 
+## get actual patterns
+actual_patterns <- df_long %>% 
+  mutate(freq=minor/(minor+major)) %>% 
+  mutate(code=ifelse(freq==0, 'U', ifelse(freq<0.05, 'R', 'C'))) %>% 
+  select(-c(tot_alleles, minor, major, freq)) %>% 
+  spread(pop, code) %>% 
+  mutate(pattern=paste(AFR, EUR, SAS, EAS, AMR, sep="")) %>% 
+  select(chr, pos, pattern) %>% 
+  group_by(pattern) %>% 
+  summarise(n = n()) %>% 
+  mutate(prob=n/sum(n)) %>% select(-n) %>% 
+  mutate(g=0) %>% 
+  do(cbind(., recolor_patterns(.$pattern, keep)))
+
+df_plot2 <- rbind(actual_patterns, 
+                  df_plot %>% 
+                    spread(g, prob) %>% 
+                    filter(pattern!='UUUUU') %>% 
+                    mutate(across(where(is.numeric), ~./sum(.))) %>% 
+                    gather(g, prob, -c(pattern, recolor))) %>%
+  mutate(g=as.numeric(g))
+
+p2 <- ggplot(df_plot2 %>% mutate(recolor = fct_reorder(recolor, prob)) %>%
+              mutate(recolor = fct_relevel(recolor, "other")),
+            aes(x=g, y=prob, fill=recolor)) +
+  geom_col(lwd=0.5) + scale_fill_brewer(palette = 'Set3') + 
+  theme_pubr(legend = 'right')
+
+p2
