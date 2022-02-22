@@ -5,6 +5,7 @@
 ## load packages -------
 suppressPackageStartupMessages(require(tidyverse))
 library(ggpubr)
+library(RColorBrewer)
 #suppressPackageStartupMessages(require(optparse))
 
 ## temp stuff
@@ -13,7 +14,7 @@ pop_label = "superpops"
 CHR = 22
 g_list = seq(10,300,by = 10)
 z = 0.05
-DROP_SINGLETONS = FALSE
+DROP_SINGLETONS = TRUE
 
 ## read in superpop data -----
 df <- read.table(file.path('data', 'allele_counts', paste('chr', CHR, '_counts_', pop_label, '.txt', sep="")), header = TRUE)
@@ -150,6 +151,12 @@ for (i in 1:length(g_list)) {
   }
 }
 
+if (DROP_SINGLETONS) {
+  df_match_noSingletons <- df_match
+} else {
+  df_match_wSingletons <- df_match
+}
+
 df_all2 <- df_all
 
 ## recolor the patterns for the plot 
@@ -157,7 +164,7 @@ keep <- df_all2 %>% gather(g, prob, -pattern) %>%
   filter(g==300) %>% filter(prob >= 0.01) %>%
   pull(pattern)
 recolor_patterns <- function(pattern, keep) {
-  recolor <- ifelse(pattern %in% keep, pattern, 'other')
+  recolor <- ifelse(pattern %in% keep, pattern, 'Other')
   return(data.frame(recolor=recolor))
 }
 
@@ -168,21 +175,35 @@ df_plot <- df_all2 %>%
 
 
 ## plot pattern probabilities as a function of g
+mycolors <- colorRampPalette(brewer.pal(12, "Set3"))(length(keep) + 1)
 p <- ggplot(df_plot %>% mutate(recolor = fct_reorder(recolor, prob)) %>%
-              mutate(recolor = fct_relevel(recolor, "other")),
+              mutate(recolor = fct_relevel(recolor, "Other")) %>% 
+              group_by(g, recolor) %>% summarise(prob=sum(prob)),
             aes(x=g, y=prob, fill=recolor)) +
-  geom_col(lwd=0.5) + scale_fill_brewer(palette = 'Set3') + 
-  theme_pubr(legend = 'right')
+  geom_col(lwd=0.15, color='black') + scale_fill_manual(values=mycolors) + 
+  theme_pubr(legend = 'right') + xlab("Sample Size") + ylab("Average probability of pattern") + 
+  labs(fill="Pattern") + scale_x_continuous(breaks=c(10,100,200,300), expand = c(0.005,0.005)) + scale_y_continuous(expand=c(0.005,0.005))
 
 p
 
-ggsave(p, filename="/Users/danie/Downloads/chr22_allelePatterns.pdf", width=7, height=4)
+ggsave(p, filename="../../Downloads/chr22_allelePatterns_noSingletons.pdf", width=9, height=7)
 
+
+## plot relative probabilities of patterns given not UUUUU -------
+
+## reorganize plot data
+relative_df <- df_all2 %>% 
+  gather(g, prob, -pattern) %>% 
+  mutate(g=as.numeric(g)) %>%
+  spread(g, prob) %>% 
+  filter(pattern!='UUUUU') %>% 
+  mutate(across(where(is.numeric), ~./sum(.))) %>% 
+  gather(g, prob, -pattern)
 
 ## get actual patterns
 actual_patterns <- df_long %>% 
   mutate(freq=minor/(minor+major)) %>% 
-  mutate(code=ifelse(freq==0, 'U', ifelse(freq<0.05, 'R', 'C'))) %>% 
+  mutate(code=ifelse(freq==0, 'U', ifelse(freq <0.05, 'R', 'C'))) %>% 
   select(-c(tot_alleles, minor, major, freq)) %>% 
   spread(pop, code) %>% 
   mutate(pattern=paste(AFR, EUR, SAS, EAS, AMR, sep="")) %>% 
@@ -190,21 +211,48 @@ actual_patterns <- df_long %>%
   group_by(pattern) %>% 
   summarise(n = n()) %>% 
   mutate(prob=n/sum(n)) %>% select(-n) %>% 
-  mutate(g=0) %>% 
-  do(cbind(., recolor_patterns(.$pattern, keep)))
+  mutate(g=320)
 
-df_plot2 <- rbind(actual_patterns, 
-                  df_plot %>% 
-                    spread(g, prob) %>% 
-                    filter(pattern!='UUUUU') %>% 
-                    mutate(across(where(is.numeric), ~./sum(.))) %>% 
-                    gather(g, prob, -c(pattern, recolor))) %>%
+## group only patterns >=0.005
+keep2 <- relative_df %>%
+  filter(g==300) %>%
+  filter(prob >= 0.01) %>%
+  pull(pattern)
+
+relative_df <- relative_df %>% 
+  do(cbind(., recolor_patterns(.$pattern, keep2)))
+
+actual_patterns <- actual_patterns %>%
+  do(cbind(., recolor_patterns(.$pattern, keep2)))
+  
+
+levels <- actual_patterns %>% mutate(recolor=fct_reorder(recolor, prob)) %>% pull(recolor) %>% levels()
+df_plot2 <- rbind(actual_patterns, relative_df) %>%
   mutate(g=as.numeric(g))
 
-p2 <- ggplot(df_plot2 %>% mutate(recolor = fct_reorder(recolor, prob)) %>%
-              mutate(recolor = fct_relevel(recolor, "other")),
+mycolors <- colorRampPalette(brewer.pal(12, "Set3"))(length(levels))
+
+p2 <- ggplot(df_plot2 %>% mutate(recolor = fct_relevel(recolor, levels)) %>% 
+               group_by(g, recolor) %>% summarise(prob=sum(prob)),
             aes(x=g, y=prob, fill=recolor)) +
-  geom_col(lwd=0.5) + scale_fill_brewer(palette = 'Set3') + 
-  theme_pubr(legend = 'right')
+  geom_col(lwd=0.15, color='black') + scale_fill_manual(values=mycolors) + 
+  theme_pubr(legend = 'right') + xlab("Sample Size") + ylab("Relative pattern probability") + 
+  labs(fill="Pattern") + scale_x_continuous(breaks=c(10,100,200,300), expand = c(0.005,0.005)) + scale_y_continuous(expand=c(0.005,0.005))
 
 p2
+
+ggsave(p2, filename="../../Downloads/chr22_allelePatterns_relative_noSingletons.pdf", width=9, height=7)
+
+df_match <- inner_join(df_match_wSingletons %>% rename(Yes=match_rate), df_match_noSingletons %>% rename(No=match_rate)) %>% 
+  gather(`Has Singletons?`, prob, -g)
+## plot the match frequency
+p3 <- ggplot(df_match %>% mutate(g=as.numeric(g)), aes(x=g, y=prob)) + 
+  geom_line(aes(color=`Has Singletons?`, lty=`Has Singletons?`) ,lwd=1.5) + 
+  xlab("Sample Size") + 
+  ylab("Match Frequency") +
+  theme_pubr(legend = "right") + 
+  scale_x_continuous(breaks=c(10,100,200,300), expand = c(0.005,0.005)) +
+  scale_y_continuous(limits = c(0,1), expand=c(0.005,0.005))
+p3
+
+ggsave(p3, filename="../../Downloads/match_rate.pdf", width=4, height=4)
