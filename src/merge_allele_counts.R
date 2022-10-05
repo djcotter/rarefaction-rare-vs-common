@@ -6,6 +6,9 @@
 suppressPackageStartupMessages(require(tidyverse))
 suppressPackageStartupMessages(require(optparse))
 
+## set seed -----
+set.seed(42)
+
 ## parse arguments ------
 option_list = list(
   make_option(c('--pops'), type='logical', action = "store_true", default=FALSE,
@@ -24,7 +27,7 @@ if( opt$pops && opt$superpops ) {
   stop("Can only specify --pops OR --superpops NOT BOTH.", call.=FALSE)
 }
 
-if( !opt$pops && !opt$superpops ) {
+if ( !opt$pops && !opt$superpops ) {
   print_help(opt_parser)
   stop("Must specify either --pops OR --superpops.", call.=FALSE)
 }
@@ -56,8 +59,13 @@ df_all <- read.table(file = file.path('data', 'tmp', paste('ALL_', CHR, '.frq.co
   select(-n_alleles)
 
 ## define minor allele functions -----
+pick_random <- function(a_count, b_count) {
+  rand_pattern <- sample(c(paste(a, b, sep=":"),paste(b, a, sep=":")), 1)
+  return(rand_pattern)
+}
+
 compare_alleles <- function(a, a_count, b, b_count) {
-    alleles = ifelse(a_count == b_count, NA, 
+    alleles = ifelse(a_count == b_count, rand_pattern(a,b),
                      ifelse(a_count<b_count, paste(a, b, sep=":"), paste(b, a, sep=":")))
     return(data.frame(alleles=alleles) %>% separate(alleles, into=c("minor", "major"), sep=":"))
 }

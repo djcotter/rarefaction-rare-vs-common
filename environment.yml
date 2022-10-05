@@ -8,6 +8,7 @@ dependencies:
   - python=3.7
   - snakemake
   - bcftools
+  - openssl=1.0
   - tabix
   - vcftools
   # R packages:
