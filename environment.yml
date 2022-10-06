@@ -5,10 +5,10 @@ channels:
   - r
   - defaults
 dependencies:
-  - python=3
+  - python=3.7
   - snakemake
   - bcftools
-  - openssl=1.0
+  - openssl
   - tabix
   - vcftools
   # R packages:
