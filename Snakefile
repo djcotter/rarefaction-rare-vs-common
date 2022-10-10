@@ -121,14 +121,15 @@ rule merge_POP_allele_counts:
     input:
         lambda wildcards: expand(
             path.join('data', 'tmp', '{POP}_chr{CHR}.frq.count'),
-            POP=['ALL'] + POPULATIONS,
+            POP=POPULATIONS,
             CHR=wildcards.chr
         )
     params:
         script = path.join('src', 'merge_allele_counts.R'),
         chr = lambda wildcards: wildcards.chr
     output:
-        path.join('data', 'allele_counts', 'chr{chr}_counts_pops.txt')
+        path.join('data', 'allele_counts', 'chr{chr}_counts_pops.txt'),
+        path.join('data', 'allele_counts', 'chr{chr}_equal-frequency-alleles_pops.txt')
     shell:
         "Rscript --vanilla {params.script} --pops --chr {params.chr}"
 
@@ -143,13 +144,14 @@ rule merge_SUPERPOP_allele_counts:
     input:
         lambda wildcards: expand(
             path.join('data', 'tmp', '{POP}_chr{CHR}.frq.count'),
-            POP=['ALL'] + SUPERPOPULATIONS,
+            POP=SUPERPOPULATIONS,
             CHR=wildcards.chr
         )
     params:
         script = path.join('src', 'merge_allele_counts.R'),
         chr = lambda wildcards: wildcards.chr
     output:
-        path.join('data', 'allele_counts', 'chr{chr}_counts_superpops.txt')
+        path.join('data', 'allele_counts', 'chr{chr}_counts_superpops.txt'),
+        path.join('data', 'allele_counts', 'chr{chr}_equal-frequency-alleles_superpops.txt')
     shell:
         "Rscript --vanilla {params.script} --superpops --chr {params.chr}"

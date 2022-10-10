@@ -59,51 +59,87 @@ if (POPS) {
   pop_label = "superpops"
 }
 
-## read in ALL data -----
-df_all <- read.table(
-  file = file.path("data", "tmp",
-                   paste("ALL_", CHR, ".frq.count", sep = "")),
-  skip = 1,
-  col.names = c("chr", "pos", "n_alleles",
-                "tot_alleles", "allele1", "allele2")) %>%
-  select(-n_alleles)
-
-## define minor allele functions -----
-pick_random <- function(a, b) {
-  rand_idx <- sample(c(0, 1), length(a), replace = TRUE)
-  rand_pattern <- ifelse(rand_idx,
-                         paste(a, b, sep = ":"),
-                         paste(b, a, sep = ":"))
-  return(rand_pattern)
+df <- NULL
+df_all <- NULL
+## read in pop data ----
+for (i in seq_along(pop_list)) {
+  pop = pop_list[i]
+  df <- read.table(file = file.path("data", "tmp", paste(pop, "_", CHR, ".frq.count", sep="")), 
+                   skip=1, col.names = c("chr", "pos", "n_alleles", "tot_alleles", "allele1" , "allele2")) %>%
+    tibble() %>%
+    select(-n_alleles) %>% 
+    gather("allele", "info", -c("chr", "pos", "tot_alleles")) %>% separate(info, into=c("allele", "count"), sep=":") %>%
+    mutate(count=as.numeric(count)) %>%
+    mutate(pop=pop) %>%
+    mutate(freq=count/tot_alleles) %>% 
+    select(-tot_alleles)
+  
+  if (is.null(df_all)) {
+    df_all <- df
+  } else {
+    df_all <- rbind(df_all,df)
+  }
+  
 }
 
-# FIGURE OUT WHY THIS WON'T VECTORIZE PROPERLY
-compare_alleles <- function(a, a_count, b, b_count) {
-    random_pairs <- pick_random(a, b)
-    alleles <- ifelse(a_count == b_count, random_pairs,
-                      ifelse((a_count == 0 || b_count == 0), NA,
-                             ifelse(a_count < b_count, paste(a, b, sep = ":"),
-                                    paste(b, a, sep = ":"))))
-    return(data.frame(alleles = alleles) %>%
-           tidyr::separate(alleles, into = c("minor", "major"), sep = ":"))
+df_all_mod <- df_all %>% 
+  group_by(chr,pos) %>%
+  mutate(tot_alleles=sum(count)) %>%
+  ungroup() %>% 
+  group_by(chr, pos, allele, tot_alleles) %>%
+  summarise(avg_freq=mean(freq)) %>%
+  ungroup() %>%
+  mutate(class=ifelse(avg_freq<0.5,
+                      'minor', ifelse(avg_freq==0.5, 
+                                      'equal', 'major')))
+
+drop <- df_all_mod %>% filter(avg_freq==1 | avg_freq==0) %>% pull(pos) %>% unique()
+  
+## define function to randomly assign "equal" allelic types
+rand_allele <- function(alleles) {
+  allele1 = alleles[1]
+  allele2 = alleles[2]
+  test <- sample(c(0,1), 1)
+  if(test){
+    return(paste(allele1,allele2,sep=":"))
+  } else{
+    return(paste(allele2,allele1,sep=":"))
+  }
 }
 
+# subset out and randomly assign one equal allele to major and one to minor
+df_equal_freq <- df_all_mod %>% filter(class=="equal") %>%
+  select(-avg_freq) %>%
+  group_by(chr,pos,class,tot_alleles) %>% summarise(allele=rand_allele(allele)) %>%
+  ungroup()
+
+## create output directory if non existent -----
+if (!file.exists(file.path("data", "allele_counts"))) {
+  dir.create(file.path("data", "allele_counts"), showWarnings = FALSE)
+}
+
+write.table(df_equal_freq,
+            file=file.path("data", "allele_counts", paste(CHR, "_equal-frequency-alleles_", pop_label, ".txt", sep="")), 
+            col.names = F, row.names = F, quote = F)
+
+df_all_mod <- rbind(df_all_mod %>% 
+                      filter(class!="equal") %>% 
+                      select(-avg_freq) %>%
+                      spread(class, allele), 
+                    df_equal_freq %>%
+                      select(-class) %>%
+                      separate(allele,into=c("major","minor"), sep=":")) %>%
+  arrange(chr,pos) %>% select(chr, pos, tot_alleles, minor, major)
+
+## function to arrange allele counts based on previous data frame
 define_minor_allele <- function(pop, a, a_count, b, b_count, minor) {
   alleles <- ifelse(a == minor, 
-                   paste(a_count, b_count, sep = "/"),
-                   paste(b_count, a_count, sep = "/"))
+                    paste(a_count, b_count, sep = "/"),
+                    paste(b_count, a_count, sep = "/"))
   return(alleles)
 }
 
-## assign globally minor alleles ------
-df_all_mod <- df_all %>% head(100) %>%
-  separate(allele1, into = c("allele1", "count1")) %>%
-  separate(allele2, into = c("allele2", "count2")) %>%
-  mutate(count1 = as.numeric(count1), count2 = as.numeric(count2)) %>%
-  do(cbind(., compare_alleles(.$allele1, .$count1, .$allele2, .$count2))) %>%
-  select(-allele1, -count1, -allele2, -count2)
-
-## loop through population files ----
+## loop through population files again and add counts ----
 for (i in seq_along(pop_list)) {
   pop = pop_list[i]
   df <- read.table(file = file.path("data", "tmp", paste(pop, "_", CHR, ".frq.count", sep="")), 
@@ -116,10 +152,8 @@ for (i in seq_along(pop_list)) {
     select(-c(a, a_count, b, b_count))
 }
 
-## create output directory if non existent -----
-if (!file.exists(file.path("data", "allele_counts"))) {
-  dir.create(file.path("data", "allele_counts"), showWarnings = FALSE)
-}
+## drop sites that are not variable
+df_all_mod <- df_all_mod %>% filter(!(pos %in% drop))
 
 ## write output to file -----
 write.table(df_all_mod,
