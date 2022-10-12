@@ -93,6 +93,7 @@ df_all_mod <- df_all %>%
                       'minor', ifelse(avg_freq==0.5, 
                                       'equal', 'major')))
 
+missing_data <- df_all_mod %>% filter(is.na(class)) %>% pull(pos) %>% unique()
 drop <- df_all_mod %>% filter(avg_freq==1 | avg_freq==0) %>% pull(pos) %>% unique()
   
 ## define function to randomly assign "equal" allelic types
@@ -123,7 +124,8 @@ write.table(df_equal_freq,
             col.names = F, row.names = F, quote = F)
 
 df_all_mod <- rbind(df_all_mod %>% 
-                      filter(class!="equal") %>% 
+                      filter(class!="equal") %>%
+                      filter(!(pos %in% missing_data)) %>%
                       select(-avg_freq) %>%
                       spread(class, allele), 
                     df_equal_freq %>%
@@ -144,7 +146,9 @@ for (i in seq_along(pop_list)) {
   pop = pop_list[i]
   df <- read.table(file = file.path("data", "tmp", paste(pop, "_", CHR, ".frq.count", sep="")), 
                    skip=1, col.names = c("chr", "pos", "n_alleles", "tot_alleles", "allele1" , "allele2")) %>%
-    select(-n_alleles) %>% separate(allele1, into=c("a", "a_count"), sep=":") %>% separate(allele2, into=c("b", "b_count"), sep=":")
+    select(-n_alleles) %>% 
+    filter(!(pos %in% missing_data)) %>%
+    separate(allele1, into=c("a", "a_count"), sep=":") %>% separate(allele2, into=c("b", "b_count"), sep=":")
   
   df_all_mod <- df_all_mod %>% 
     cbind(., df %>% select(a:b_count)) %>% 
