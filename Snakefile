@@ -153,6 +153,6 @@ rule merge_SUPERPOP_allele_counts:
     output:
         path.join('data', 'allele_counts', 'chr{chr}_counts_superpops.txt'),
         path.join('data', 'allele_counts', 'chr{chr}_equal-frequency-alleles_superpops.txt'),
-        path.join('data', 'allele_count', 'chr{chr}_missing-data_superpops.txt')
+        path.join('data', 'allele_counts', 'chr{chr}_missing-data_superpops.txt')
     shell:
         "Rscript --vanilla {params.script} --superpops --chr {params.chr}"
