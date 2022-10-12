@@ -44,6 +44,10 @@ POPS = opt$pops
 SUPERPOPS = opt$superpops
 CHR = paste("chr", opt$chr, sep="")
 
+# flag to indicate whether to include or drop missing data
+# i.e. data that has no observations at a loci in 1 or more populations
+include_missing_data <- TRUE
+
 ## read in population data -------
 pop_list <- read.table(
   file.path("data", "tmp", "individual_population_codes.txt"),
@@ -82,20 +86,35 @@ for (i in seq_along(pop_list)) {
   
 }
 
+## Handle SNPs that have data missing in one or more populations by recoding NAs in Freq column to 0
+missing_data <- data.frame(pos=df_all %>% filter(is.na(freq)) %>% pull(pos) %>% unique()) %>% mutate(chr=5) %>% select(chr, pos)
+write.table(missing_data,
+            file=file.path("data", "allele_counts", paste(CHR, "_missing-data_", pop_label, ".txt", sep="")), 
+            col.names = F, row.names = F, quote = F)
+
+## if filtering, make a list of snps with NAs (i.e. missing data) to filter out
+if (include_missing_data == FALSE) {
+  missing_data <- missing_data %>% pull(pos)
+} else {
+  missing_data <- c()
+}
+
+# determine major and minor alleles
+# na.rm if including missing data
 df_all_mod <- df_all %>% 
   group_by(chr,pos) %>%
   mutate(tot_alleles=sum(count)) %>%
   ungroup() %>% 
   group_by(chr, pos, allele, tot_alleles) %>%
-  summarise(avg_freq=mean(freq)) %>%
+  summarise(avg_freq=mean(freq, na.rm=include_missing_data)) %>%
   ungroup() %>%
   mutate(class=ifelse(avg_freq<0.5,
                       'minor', ifelse(avg_freq==0.5, 
                                       'equal', 'major')))
 
-missing_data <- df_all_mod %>% filter(is.na(class)) %>% pull(pos) %>% unique()
+# make a list of snps that are not variable to drop from the analysis
 drop <- df_all_mod %>% filter(avg_freq==1 | avg_freq==0) %>% pull(pos) %>% unique()
-  
+
 ## define function to randomly assign "equal" allelic types
 rand_allele <- function(alleles) {
   allele1 = alleles[1]
@@ -163,6 +182,3 @@ df_all_mod <- df_all_mod %>% filter(!(pos %in% drop))
 write.table(df_all_mod,
             file=file.path("data", "allele_counts", paste(CHR, "_counts_", pop_label, ".txt", sep="")), 
             col.names = T, row.names = F, quote = F)
-
-
-
