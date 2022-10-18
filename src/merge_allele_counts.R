@@ -46,7 +46,8 @@ CHR = paste("chr", opt$chr, sep="")
 
 # flag to indicate whether to include or drop missing data
 # i.e. data that has no observations at a loci in 1 or more populations
-include_missing_data <- TRUE
+# We drop loci w/ missing data from the analysis but track which loci
+include_missing_data <- FALSE
 
 ## read in population data -------
 pop_list <- read.table(
