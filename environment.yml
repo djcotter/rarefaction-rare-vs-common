@@ -11,6 +11,7 @@ dependencies:
   - openssl
   - tabix
   - vcftools
+  - pygraphviz # graph environmenty
   # R packages:
   - r-base
   - r-tidyverse
