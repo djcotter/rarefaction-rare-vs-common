@@ -103,7 +103,7 @@ rule count_alleles:
                                            POP=wildcards.population,
                                            CHR=wildcards.chr)
     output:
-        temp(path.join('data', 'tmp', '{population}_chr{chr}.frq.count'))
+        path.join('data', 'tmp', '{population}_chr{chr}.frq.count')
     log:
         temp(path.join('data', 'tmp', '{population}_chr{chr}.log'))
     shell:
