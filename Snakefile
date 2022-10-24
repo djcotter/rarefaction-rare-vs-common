@@ -156,3 +156,24 @@ rule merge_SUPERPOP_allele_counts:
         path.join('data', 'allele_counts', 'chr{chr}_missing-data_superpops.txt')
     shell:
         "Rscript --vanilla {params.script} --superpops --chr {params.chr}"
+
+rule calculate_allele_patterns:
+    """
+    This rule takes the allele counts table for a given chromosome and calculates the 
+    five-letter super population patterns for each locus. It outputs the mean probability
+    of each pattern across all snps analyzed. It can operate on the whole chromosome or
+    a subset of the chromosome size.
+    """
+    input:
+        path.join('data', 'allele_count', 'chr{chr}_counts_superpops.txt')
+    params:
+        script = path.join('src', 'calculate_superpop_allele_patterns.R'),
+        chr = lambda wildcards: wildcards.chr,
+        threshold = 0.05,
+        sample = lambda wildcards: wildcards.sample_size,
+        singletons = lambda wildcards: '--drop-singletons' if wildcards.singletons == "no" else ''
+    output:
+        path.join('data', 'patterns', '{chr}_patterns_{sample_size}-snps_{singletons}Singletons.txt')
+    shell:
+        "Rscript --vanilla {params.script} --chr {params.chr} --threshold {params.threshold} "
+        "--sample {params.sample} {params.singletons}"
