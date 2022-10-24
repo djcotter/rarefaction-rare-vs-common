@@ -44,6 +44,11 @@ POPS = opt$pops
 SUPERPOPS = opt$superpops
 CHR = paste("chr", opt$chr, sep="")
 
+## create output directory if non existent -----
+if (!file.exists(file.path("data", "allele_counts"))) {
+  dir.create(file.path("data", "allele_counts"), showWarnings = FALSE)
+}
+
 # flag to indicate whether to include or drop missing data
 # i.e. data that has no observations at a loci in 1 or more populations
 # We drop loci w/ missing data from the analysis but track which loci
@@ -88,7 +93,7 @@ for (i in seq_along(pop_list)) {
 }
 
 ## Handle SNPs that have data missing in one or more populations by recoding NAs in Freq column to 0
-missing_data <- data.frame(pos=df_all %>% filter(is.na(freq)) %>% pull(pos) %>% unique()) %>% mutate(chr=5) %>% select(chr, pos)
+missing_data <- data.frame(pos=df_all %>% filter(is.na(freq)) %>% pull(pos) %>% unique()) %>% mutate(chr=CHR) %>% select(chr, pos)
 write.table(missing_data,
             file=file.path("data", "allele_counts", paste(CHR, "_missing-data_", pop_label, ".txt", sep="")), 
             col.names = F, row.names = F, quote = F)
@@ -133,11 +138,6 @@ df_equal_freq <- df_all_mod %>% filter(class=="equal") %>%
   select(-avg_freq) %>%
   group_by(chr,pos,class,tot_alleles) %>% summarise(allele=rand_allele(allele)) %>%
   ungroup()
-
-## create output directory if non existent -----
-if (!file.exists(file.path("data", "allele_counts"))) {
-  dir.create(file.path("data", "allele_counts"), showWarnings = FALSE)
-}
 
 write.table(df_equal_freq,
             file=file.path("data", "allele_counts", paste(CHR, "_equal-frequency-alleles_", pop_label, ".txt", sep="")), 
