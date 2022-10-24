@@ -165,7 +165,7 @@ rule calculate_allele_patterns:
     a subset of the chromosome size.
     """
     input:
-        path.join('data', 'allele_count', 'chr{chr}_counts_superpops.txt')
+        path.join('data', 'allele_counts', 'chr{chr}_counts_superpops.txt')
     params:
         script = path.join('src', 'calculate_superpop_allele_patterns.R'),
         chr = lambda wildcards: wildcards.chr,
