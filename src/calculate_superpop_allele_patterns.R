@@ -14,7 +14,7 @@ option_list <- list(
   make_option(c("--chr"),
               type = "character", default = NULL,
               help = "chromosome to analyze"),
-  make_option(c('--drop-singltetons'),
+  make_option(c("--drop-singletons"),
               type= "logical", action = "store_true", default = FALSE,
               help = "flag specifying whether to drop singletons"),
   make_option(c("--threshold"),
