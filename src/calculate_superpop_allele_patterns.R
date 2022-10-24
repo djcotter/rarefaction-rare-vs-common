@@ -34,7 +34,7 @@ if ( is.null(opt$chr) ) {
 }
 
 pop_label <- "superpops"
-CHR <- paste("chr", opt$chr, sep="")
+CHR <- opt$chr
 DROP_SINGLETONS <- opt$`drop-singltetons`
 z <- opt$threshold
 g_list <- seq(10, 300, by = 10)
