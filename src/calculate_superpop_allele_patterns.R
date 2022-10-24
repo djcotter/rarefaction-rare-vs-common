@@ -35,7 +35,7 @@ if ( is.null(opt$chr) ) {
 
 pop_label <- "superpops"
 CHR <- opt$chr
-DROP_SINGLETONS <- opt$`drop-singltetons`
+DROP_SINGLETONS <- opt$`drop-singletons`
 z <- opt$threshold
 g_list <- seq(10, 300, by = 10)
 sample_size = opt$sample
