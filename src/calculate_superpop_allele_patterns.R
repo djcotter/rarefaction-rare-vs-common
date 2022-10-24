@@ -7,8 +7,6 @@
 
 ## load packages -------
 suppressPackageStartupMessages(require(tidyverse))
-library(ggpubr)
-library(RColorBrewer)
 library(optparse)
 
 ## parse arguments ------
