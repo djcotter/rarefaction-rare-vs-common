@@ -26,6 +26,7 @@ SUPERPOPULATIONS = sorted(json.load(open(config['POP_CODES']))['SUPERPOP'])
 POPULATIONS = sorted(json.load(open(config['POP_CODES']))['POP'])
 
 POP_LIST = ['ALL'] + SUPERPOPULATIONS + POPULATIONS
+G_LIST = list(range(10,301,10))
 
 # global variables
 CHROMS = [x for x in range(1, 23)]  # list from 1 to 22
@@ -157,7 +158,7 @@ rule merge_SUPERPOP_allele_counts:
     shell:
         "Rscript --vanilla {params.script} --superpops --chr {params.chr}"
 
-rule calculate_allele_patterns:
+rule calculate_various_g_allele_patterns:
     """
     This rule takes the allele counts table for a given chromosome and calculates the 
     five-letter super population patterns for each locus. It outputs the mean probability
@@ -173,7 +174,15 @@ rule calculate_allele_patterns:
         sample = lambda wildcards: 0 if wildcards.sample_size == 'all' else wildcards.sample_size,
         singletons = lambda wildcards: '--drop-singletons' if wildcards.singletons == "no" else ''
     output:
-        path.join('data', 'patterns', '{chr}_patterns_{sample_size}-snps_{singletons}Singletons.txt')
+        path.join('data', 'patterns', '{chr}_patterns_{sample_size}-snps_{singletons}Singletons.txt'),
+        path.join('data', 'patterns', 
+                  '{chr}_pattern-match-proportions_{sample_size}-snps_{singletons}Singletons.txt'),
+        path.join('data', 'patterns',
+                  '{chr}_actualPattern_{sample_size}-snps_{singletons}Singletons.txt'),
+        expand(path.join('data', 'patterns',
+                         '{chr}_{g}_pattern_byPosition_{sample_size}-snps_{singletons}Singletons.txt'),
+               g=G_LIST)
+
     shell:
         "Rscript --vanilla {params.script} --chr {params.chr} --threshold {params.threshold} "
         "--sample {params.sample} {params.singletons}"

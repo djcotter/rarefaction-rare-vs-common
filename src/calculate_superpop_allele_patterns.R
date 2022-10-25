@@ -109,12 +109,12 @@ actual_pattern_vector <- actual_patterns %>%
 ## write the actual pattern probabilities to file
 if (DROP_SINGLETONS) {
   write.table(actual_pattern_vector, file = paste('data/patterns/',
-                                     CHR, '_actualPattern_byPosition_', sample_label, 
+                                     CHR, '_actualPatternn_', sample_label, 
                                      '_noSingletons.txt', sep=""),
               sep = '\t', quote = FALSE, row.names = FALSE, col.names = TRUE)
 } else {
   write.table(actual_pattern_vector, file = paste('data/patterns/',
-                                     CHR, '_actualPattern_byPosition_', sample_label, 
+                                     CHR, '_actualPattern_', sample_label, 
                                      '_wSingletons.txt', sep=""),
               sep = '\t', quote = FALSE, row.names = FALSE, col.names = TRUE)
 }
