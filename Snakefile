@@ -178,10 +178,7 @@ rule calculate_various_g_allele_patterns:
         path.join('data', 'patterns', 
                   '{chr}_pattern-match-proportions_{sample_size}-snps_{singletons}Singletons.txt'),
         path.join('data', 'patterns',
-                  '{chr}_actualPattern_{sample_size}-snps_{singletons}Singletons.txt'),
-        expand(path.join('data', 'patterns',
-                         '{chr}_g-{g}_pattern_byPosition_{sample_size}-snps_{singletons}Singletons.txt'),
-               g=G_LIST)
+                  '{chr}_actualPattern_{sample_size}-snps_{singletons}Singletons.txt')
 
     shell:
         "Rscript --vanilla {params.script} --chr {params.chr} --threshold {params.threshold} "
