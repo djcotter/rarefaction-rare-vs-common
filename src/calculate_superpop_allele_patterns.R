@@ -108,12 +108,12 @@ actual_pattern_vector <- actual_patterns %>%
 
 ## write the actual pattern probabilities to file
 if (DROP_SINGLETONS) {
-  write.table(actual_pattern_vector, file = paste('~/Projects/rarefaction-project/data/patterns/',
+  write.table(actual_pattern_vector, file = paste('data/patterns/',
                                      CHR, '_actualPattern_byPosition_', sample_label, 
                                      '_noSingletons.txt', sep=""),
               sep = '\t', quote = FALSE, row.names = FALSE, col.names = TRUE)
 } else {
-  write.table(actual_pattern_vector, file = paste('~/Projects/rarefaction-project/data/patterns/',
+  write.table(actual_pattern_vector, file = paste('data/patterns/',
                                      CHR, '_actualPattern_byPosition_', sample_label, 
                                      '_wSingletons.txt', sep=""),
               sep = '\t', quote = FALSE, row.names = FALSE, col.names = TRUE)
@@ -217,12 +217,12 @@ for (i in seq_along(g_list)) {
      log = FALSE, patterns = pattern_vec))
 
   if (DROP_SINGLETONS) {
-    write.table(df_probs, file = paste('~/Projects/rarefaction-project/data/patterns/',
+    write.table(df_probs, file = paste('data/patterns/',
                                        CHR, '_', g, '_pattern_byPosition_', sample_label, 
                                        '_noSingletons.txt', sep=""),
                 sep = '\t', quote = FALSE, row.names = FALSE, col.names = TRUE)
   } else {
-    write.table(df_probs, file = paste('~/Projects/rarefaction-project/data/patterns/',
+    write.table(df_probs, file = paste('data/patterns/',
                                        CHR, '_', g, '_pattern_byPosition_', sample_label, 
                                        '_wSingletons.txt', sep=""),
                 sep = '\t', quote = FALSE, row.names = FALSE, col.names = TRUE)
@@ -263,21 +263,21 @@ for (i in seq_along(g_list)) {
 }
 
 if (DROP_SINGLETONS) {
-  write.table(df_all, file = paste('~/Projects/rarefaction-project/data/patterns/', 
+  write.table(df_all, file = paste('data/patterns/',
                                    CHR, '_patterns_', sample_label, '_noSingletons.txt', sep=""),
               sep = '\t', quote = FALSE, row.names = FALSE, col.names = TRUE)
 } else {
-  write.table(df_all, file = paste('~/Projects/rarefaction-project/data/patterns/', 
+  write.table(df_all, file = paste('data/patterns/',
                                      CHR, '_patterns_', sample_label, '_wSingletons.txt', sep=""),
               sep = '\t', quote = FALSE, row.names = FALSE, col.names = TRUE)
 }
 
 if (DROP_SINGLETONS) {
-  write.table(df_match, file = paste('~/Projects/rarefaction-project/data/patterns/', 
+  write.table(df_match, file = paste('data/patterns/',
                                    CHR, '_pattern-match-proportions_', sample_label, '_noSingletons.txt', sep=""),
               sep = '\t', quote = FALSE, row.names = FALSE, col.names = TRUE)
 } else {
-  write.table(df_match, file = paste('~/Projects/rarefaction-project/data/patterns/', 
+  write.table(df_match, file = paste('data/patterns/',
                                    CHR, '_pattern-match-proportions_', sample_label, '_wSingletons.txt', sep=""),
               sep = '\t', quote = FALSE, row.names = FALSE, col.names = TRUE)
 }
