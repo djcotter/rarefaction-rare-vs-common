@@ -56,9 +56,9 @@ if (sample_size > 0) {
   set.seed(42)
   df_sub <- df %>% sample_n(sample_size, replace=FALSE)
   df <- df_sub %>% tibble()
-  sample_label <- paste(sample_size, '-snps', sep="")
+  sample_label <- paste(format(sample_size, scientific=FALSE), '-snps', sep="")
 } else {
-  sample_label <- "wholeChromosome"
+  sample_label <- "all-snps"
 }
 
 

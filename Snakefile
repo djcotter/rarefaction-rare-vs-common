@@ -170,7 +170,7 @@ rule calculate_allele_patterns:
         script = path.join('src', 'calculate_superpop_allele_patterns.R'),
         chr = lambda wildcards: wildcards.chr,
         threshold = 0.05,
-        sample = lambda wildcards: wildcards.sample_size,
+        sample = lambda wildcards: 0 if wildcards.sample_size == 'all' else wildcards.sample_size,
         singletons = lambda wildcards: '--drop-singletons' if wildcards.singletons == "no" else ''
     output:
         path.join('data', 'patterns', '{chr}_patterns_{sample_size}-snps_{singletons}Singletons.txt')
