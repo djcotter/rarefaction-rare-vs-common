@@ -180,7 +180,7 @@ rule calculate_various_g_allele_patterns:
         path.join('data', 'patterns',
                   '{chr}_actualPattern_{sample_size}-snps_{singletons}Singletons.txt'),
         expand(path.join('data', 'patterns',
-                         '{chr}_{g}_pattern_byPosition_{sample_size}-snps_{singletons}Singletons.txt'),
+                         '{chr}_g-{g}_pattern_byPosition_{sample_size}-snps_{singletons}Singletons.txt'),
                g=G_LIST)
 
     shell:

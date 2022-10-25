@@ -218,12 +218,12 @@ for (i in seq_along(g_list)) {
 
   if (DROP_SINGLETONS) {
     write.table(df_probs, file = paste('data/patterns/',
-                                       CHR, '_', g, '_pattern_byPosition_', sample_label, 
+                                       CHR, '_g-', g, '_pattern_byPosition_', sample_label, 
                                        '_noSingletons.txt', sep=""),
                 sep = '\t', quote = FALSE, row.names = FALSE, col.names = TRUE)
   } else {
     write.table(df_probs, file = paste('data/patterns/',
-                                       CHR, '_', g, '_pattern_byPosition_', sample_label, 
+                                       CHR, '_g-', g, '_pattern_byPosition_', sample_label, 
                                        '_wSingletons.txt', sep=""),
                 sep = '\t', quote = FALSE, row.names = FALSE, col.names = TRUE)
   }
