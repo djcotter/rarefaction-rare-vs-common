@@ -8,6 +8,7 @@
 ## load packages -------
 suppressPackageStartupMessages(require(tidyverse))
 library(optparse)
+library(gmp)
 
 ## parse arguments ------
 option_list <- list(
@@ -131,8 +132,8 @@ if (DROP_SINGLETONS) {
 u_matrix <- function(minor, major, g) {
   u_prob <- function(minor, major, g) {
     g <- rep(g, length(minor))
-    U <- choose(major, g) / choose(minor + major, g)
-    return(U)
+    U <- chooseZ(major, g) / chooseZ(minor + major, g)
+    return(as.double(U))
   }
   mat <- data.frame(minor = minor, major = major) %>%
   dplyr::distinct() %>%
@@ -146,13 +147,13 @@ r_matrix <- function(minor, major, g, z) {
   r_prob <- function(minor, major, g, z) {
     g <- rep(g, length(minor))
     cutoff <- floor(z * (minor + major))
-    R <- mapply(function(n1, n2, g, k) {
+    R <- div.bigz(mapply(function(n1, n2, g, k) {
       i <- 1:k
-      sum(choose(n1, i) * choose(n2, g - i))
+      sum(chooseZ(n1, i) * chooseZ(n2, g - i))
       },
       minor, major, g, cutoff,
-      SIMPLIFY = TRUE) / (choose(minor + major, g))
-    return(R)
+      SIMPLIFY = TRUE) %>% c_bigz(),(chooseZ(minor + major, g)))
+    return(R %>% as.double())
   }
   mat <- data.frame(minor = minor, major = major) %>%
   dplyr::distinct() %>%
@@ -217,10 +218,10 @@ for (i in seq_along(g_list)) {
     pull(pattern)
 
   df_probs <- df_probs %>%
-  group_by(chr, pos, tot_alleles) %>%
-  arrange(pos, cat) %>%
+    group_by(chr, pos, tot_alleles) %>%
+    arrange(pos, cat) %>%
     do(merge_codes(.$AFR, .$EUR, .$SAS, .$EAS, .$AMR,
-     log = FALSE, patterns = pattern_vec))
+                   log = FALSE, patterns = pattern_vec))
   if (g == 10 | g %% 100 == 0) {
     if (DROP_SINGLETONS) {
       write.table(

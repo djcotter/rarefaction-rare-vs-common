@@ -93,7 +93,7 @@ read_and_reformat <- function(filepath, normalize=FALSE) {
       mutate(across(where(is.numeric), ~./sum(.))) %>%
       gather(g, prob, -pattern)
     keep <- relative_df %>%
-      filter(g==300) %>%
+      filter(g==500) %>%
       filter(prob >= 0.01) %>%
       pull(pattern)
     relative_df <- relative_df %>%
@@ -110,7 +110,7 @@ read_and_reformat <- function(filepath, normalize=FALSE) {
     return(df_plot)
   } else {
     keep <- df %>% gather(g, prob, -pattern) %>%
-      filter(g==300) %>% filter(prob >= 0.01) %>%
+      filter(g==500) %>% filter(prob >= 0.01) %>%
       pull(pattern)
     df_plot <- df %>%
       gather(g, prob, -pattern) %>%
@@ -175,7 +175,7 @@ names(myColors) <- levels
 ## define plotting functions ------
 plot_patterns <- function(df_plot, colors=myColors, relative = FALSE) {
   # takes in the data frame and plots it as a function of sample size g
-  plot_levels <- function(df_plot, max_g=300) {
+  plot_levels <- function(df_plot, max_g=500) {
     #max_g <- df_plot$g %>% max()
     plot_levels <- df_plot %>%
       filter(g==max_g) %>%
@@ -205,7 +205,7 @@ plot_patterns <- function(df_plot, colors=myColors, relative = FALSE) {
                     size=2, direction = "y", segment.size=0.2, box.padding = 0.1,
                     force_pull=10, min.segment.length = 0.35) +
     theme_pubr(legend = 'right') + xlab("Sample size (g)") + ylab(y_label) +
-    labs(fill="Pattern") + scale_x_continuous(breaks=c(10,100,200,300), expand = c(0,0), limits = c(0,max_g+60)) + scale_y_continuous(expand=c(0,0)) +
+    labs(fill="Pattern") + scale_x_continuous(breaks=c(10,100,200,300,400,500), expand = c(0,0), limits = c(0,max_g+60)) + scale_y_continuous(expand=c(0,0)) +
     coord_capped_cart(bottom="right")
   return(p)
 }
