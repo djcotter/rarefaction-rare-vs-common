@@ -37,7 +37,7 @@ pop_label <- "superpops"
 CHR <- opt$chr
 DROP_SINGLETONS <- opt$`drop-singletons`
 z <- opt$threshold
-g_list <- seq(10, 300, by = 10)
+g_list <- seq(10, 500, by = 10)
 sample_size = opt$sample
 
 ## create output directory if non existent -----
@@ -68,9 +68,15 @@ df_long <- df %>%
   separate(counts, into = c("minor", "major"), sep = "/") %>%
   mutate(minor = as.integer(minor), major = as.integer(major))
 
+# drop all snps where all populations do not have at least max_g alleles
+max_g_list <- max(g_list)
+drop_max_g <- df_long %>% filter(minor+major<max_g_list) %>% pull(pos) %>% unique()
+df_long <- df_long %>% filter(!(pos %in% drop_max_g))
+
 rm(list = c("df"))
 
 # remove alleles for which there is no globally "minor" allele (i.e both = 50%)
+# shouldn't remove any sites after implementing random "minor" choice
 df_long <- df_long %>% filter(!is.na(minor))
 
 # drop non-biallelic sites
@@ -215,19 +221,46 @@ for (i in seq_along(g_list)) {
   arrange(pos, cat) %>%
     do(merge_codes(.$AFR, .$EUR, .$SAS, .$EAS, .$AMR,
      log = FALSE, patterns = pattern_vec))
-
-  if (DROP_SINGLETONS) {
-    write.table(df_probs, file = paste('data/patterns/',
-                                       CHR, '_g-', g, '_pattern_byPosition_', sample_label, 
-                                       '_noSingletons.txt', sep=""),
-                sep = '\t', quote = FALSE, row.names = FALSE, col.names = TRUE)
-  } else {
-    write.table(df_probs, file = paste('data/patterns/',
-                                       CHR, '_g-', g, '_pattern_byPosition_', sample_label, 
-                                       '_wSingletons.txt', sep=""),
-                sep = '\t', quote = FALSE, row.names = FALSE, col.names = TRUE)
+  if (g == 10 | g %% 100 == 0) {
+    if (DROP_SINGLETONS) {
+      write.table(
+        df_probs,
+        file = paste(
+          'data/patterns/',
+          CHR,
+          '_g-',
+          g,
+          '_pattern_byPosition_',
+          sample_label,
+          '_noSingletons.txt',
+          sep = ""
+        ),
+        sep = '\t',
+        quote = FALSE,
+        row.names = FALSE,
+        col.names = TRUE
+      )
+    } else {
+      write.table(
+        df_probs,
+        file = paste(
+          'data/patterns/',
+          CHR,
+          '_g-',
+          g,
+          '_pattern_byPosition_',
+          sample_label,
+          '_wSingletons.txt',
+          sep = ""
+        ),
+        sep = '\t',
+        quote = FALSE,
+        row.names = FALSE,
+        col.names = TRUE
+      )
+    }
   }
-
+  
   df_patterns <- df_probs %>%
     spread(pattern, prob) %>%
     group_by(chr) %>%
@@ -235,7 +268,7 @@ for (i in seq_along(g_list)) {
     gather(pattern, prob, -c(chr, pos, tot_alleles)) %>%
     select(-c(chr, pos, tot_alleles)) %>%
     rename(!!paste(g) := prob)
-
+  
   if (is.null(df_all)) {
     df_all <- df_patterns
   } else {

@@ -11,6 +11,8 @@ suppressPackageStartupMessages(require(optparse))
 library(ggpubr)
 library(RColorBrewer)
 library(grid)
+library(ggrepel)
+library(lemon)
 
 ## load packages -------
 suppressPackageStartupMessages(require(tidyverse))
@@ -144,7 +146,30 @@ levels <- all_colored_patterns %>%
   levels() %>%
   c('Other', .)
 
-myColors <- colorRampPalette(brewer.pal(12, "Set3"))(length(levels))
+set.seed(4)
+#myColors <- colorRampPalette(brewer.pal(12, "Set3"), )(length(levels)) %>% sample()
+myColors <- c(
+  "#d4a5b2",
+  "#74ca97",
+  "#b9b6cb",
+  "#9ccb7b",
+  "#a4cac1",
+  "#6696f0",
+  "#ccb59f",
+  "#66a1e5",
+  "#c8be85",
+  "#b89be3",
+  "#d4ab68",
+  "#58d5bc",
+  "#e38a7f",
+  "#68c2d9",
+  "#ccb557",
+  "#b2add6",
+  "#acc5a1",
+  "#e28cbe",
+  "#7fc4ca",
+  "#68b5e3"
+) 
 names(myColors) <- levels
 
 ## define plotting functions ------
@@ -165,7 +190,8 @@ plot_patterns <- function(df_plot, colors=myColors, relative = FALSE) {
     colors <- colors[which((names(colors) %in% pattern_levels))]
     colors <- colors[order(factor(names(colors), levels=pattern_levels))]
   }
-  y_label <- if_else(relative, "Relative probability", "Average probability")
+  #y_label <- if_else(relative, "Relative probability", "Average probability")
+  y_label <- "Probability"
   max_g <- df_plot %>% pull(g) %>% max()
   p <- ggplot(df_plot %>%
                 group_by(g, recolor) %>% 
@@ -189,6 +215,12 @@ p1 <- plot_patterns(df_wSingletons)
 p2 <- plot_patterns(df_noSingletons)
 p3 <- plot_patterns(df_wSingletons_relative, relative=TRUE)
 p4 <- plot_patterns(df_noSingletons_relative, relative=TRUE)
+p <- ggarrange(p1, p3, p2, p4,
+               nrow = 2, ncol=2,
+               widths=c(1, 1),
+               labels="AUTO",
+               legend = "none")
+p
 
 legend1 <- get_legend(p1)
 legend2 <- get_legend(p2)
@@ -197,9 +229,5 @@ legend4 <- get_legend(p4)
 legends <- ggarrange(legend1, legend3, legend2, legend4, nrow=1)
 ggsave(legends, filename='~/Downloads/test_legend1.pdf', height=6)
 
-p <- ggarrange(p1, p3, p2, p4,
-               nrow = 2, ncol=2,
-               widths=c(1, 1),
-               labels="AUTO",
-               legend = "none")
+
 ggsave(p, filename = '~/Downloads/test_chr22_patterns.pdf', width = 190, height=170, units='mm')
