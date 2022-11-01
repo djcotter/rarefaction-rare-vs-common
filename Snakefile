@@ -183,4 +183,4 @@ rule calculate_various_g_allele_patterns:
 
     shell:
         "Rscript --vanilla {params.script} --chr {params.chr} --threshold {params.threshold} "
-        "--sample {params.sample} {params.singletons} --ncores {params.cores}"
+        "--sample {params.sample} --ncores {params.cores} {params.singletons}"
