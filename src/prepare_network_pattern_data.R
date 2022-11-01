@@ -33,15 +33,15 @@ option_list <- list(
 opt_parser = OptionParser(option_list=option_list)
 opt = parse_args(opt_parser)
 
-if (is.null(opt$wSingletons)) {
+if (is.null(opt$input)) {
   print_help(opt_parser)
-  stop("Must provide a file with patterns including singletons", call. =
+  stop("Must provide an input file", call. =
          FALSE)
 }
 
-if (is.null(opt$noSingletons)) {
+if (is.null(opt$output)) {
   print_help(opt_parser)
-  stop("Must provide a file with patterns without singletons", call. = FALSE)
+  stop("Must provide an output file", call. = FALSE)
 }
 
 ## read in data -------

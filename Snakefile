@@ -217,7 +217,7 @@ rule plot_pattern_network:
     output:
         path.join('figures', '{chr}_g-{g}_{sample_size}-snps_{singletons}Singletons_network.pdf')
     shell:
-        "python {script.params} {input} {output}"
+        "python {params.script} {input} {output}"
 
 rule plot_patterns_vs_g:
     """
