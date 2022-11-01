@@ -80,6 +80,7 @@ drop_max_g <- df_long %>% filter(minor+major<max_g_list) %>% pull(pos) %>% uniqu
 df_long <- df_long %>% filter(!(pos %in% drop_max_g))
 
 rm(list = c("df"))
+gc()
 
 # remove alleles for which there is no globally "minor" allele (i.e both = 50%)
 # shouldn't remove any sites after implementing random "minor" choice
@@ -227,6 +228,7 @@ forout <- foreach(i = seq_along(g_list),
     # calculate lookup matrices for R and U
     U_mat <- u_matrix(df_long$minor, df_long$major, g)
     R_mat <- r_matrix(df_long$minor, df_long$major, g, z)
+    gc()
     
     # use the lookup matrices to calculat U, R, and C
     # for each position / population pair
@@ -240,9 +242,10 @@ forout <- foreach(i = seq_along(g_list),
       select(-minor,-major) %>%
       gather(cat, prob, R, U, C) %>%
       spread(pop, prob)
+    gc()
     # filter for loci where N_j for any population is less than g and remove them
     # (on chr22 only 115 loci have <300 for any given pop)
-    df_probs <- df_probs %>% filter(across(everything(), ~ !is.na(.)))
+    # df_probs <- df_probs %>% filter(across(everything(), ~ !is.na(.)))
     
     # get column of patterns
     pattern_vec <- data.frame(
@@ -255,9 +258,11 @@ forout <- foreach(i = seq_along(g_list),
       expand.grid() %>%
       unite(pattern, a:e, sep = "") %>%
       pull(pattern)
+    pattern_vec <- factor(pattern_vec, levels=pattern_vec)
     
     df_probs <- df_probs %>%
-      group_by(chr, pos, tot_alleles) %>%
+      select(-chr, -tot_alleles) %>%
+      group_by(pos) %>%
       arrange(pos, cat) %>%
       do(merge_codes(
         .$AFR,
@@ -266,8 +271,9 @@ forout <- foreach(i = seq_along(g_list),
         .$EAS,
         .$AMR,
         log = FALSE,
-        patterns = pattern_vec
-      ))
+        patterns = pattern_vec)
+      ) %>% ungroup()
+    gc()
     if (g == 10 | g %% 100 == 0) {
       if (DROP_SINGLETONS) {
         write.table(
@@ -309,17 +315,17 @@ forout <- foreach(i = seq_along(g_list),
     }
     
     df_patterns <- df_probs %>%
-      spread(pattern, prob) %>%
-      group_by(chr) %>%
-      summarise(across(everything(), ~ mean(.x))) %>%
-      select(-c(chr, pos, tot_alleles)) %>%
+      select(-pos) %>%
+      group_by(pattern) %>%
+      summarise(mean=mean(prob)) %>%
+      spread(pattern, mean) %>%
       mutate(g = g) %>%
       relocate(g)
+    gc()
     
     ## check if the most likely prob (sans UUUUU) matches the actual probability
-    df_rate <- df_probs %>%
+    df_rate <- subset(df_probs, df_probs$pattern != "UUUUU") %>%
       group_by(pos) %>%
-      filter(pattern != 'UUUUU') %>%
       filter(prob == max(prob)) %>%
       rename(pattern2 = pattern) %>%
       inner_join(actual_patterns, by = "pos") %>%
@@ -328,6 +334,8 @@ forout <- foreach(i = seq_along(g_list),
       ungroup() %>%
       summarise(match_rate = mean(match)) %>%
       mutate(g = paste(g))
+    rm(df_probs)
+    gc()
     
     list(df_patterns, df_rate)
   }

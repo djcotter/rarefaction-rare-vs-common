@@ -56,10 +56,10 @@ if ( is.null(opt$actual) ) {
 }
 
 # temp file paths ------ REMOVE 
-opt$wSingletons <- '~/Projects/rarefaction-project/data/patterns/22_patterns_all-snps_wSingletons.txt'
-opt$noSingletons <- '~/Projects/rarefaction-project/data/patterns/22_patterns_all-snps_noSingletons.txt'
-opt$`actual-wSingletons` <- '~/Projects/rarefaction-project/data/patterns/22_actualPattern_all-snps_wSingletons.txt'
-opt$`actual-noSingletons` <- '~/Projects/rarefaction-project/data/patterns/22_actualPattern_all-snps_noSingletons.txt'
+opt$wSingletons <- '~/Projects/rarefaction-project/data/patterns/22_patterns_100000-snps_wSingletons.txt'
+opt$noSingletons <- '~/Projects/rarefaction-project/data/patterns/22_patterns_100000-snps_noSingletons.txt'
+opt$`actual-wSingletons` <- '~/Projects/rarefaction-project/data/patterns/22_actualPattern_100000-snps_wSingletons.txt'
+opt$`actual-noSingletons` <- '~/Projects/rarefaction-project/data/patterns/22_actualPattern_100000-snps_noSingletons.txt'
 
 ## create output directory if non existent ------------------
 if (!file.exists(file.path("data", "figures"))) {
@@ -93,7 +93,7 @@ read_and_reformat <- function(filepath, normalize=FALSE) {
       mutate(across(where(is.numeric), ~./sum(.))) %>%
       gather(g, prob, -pattern)
     keep <- relative_df %>%
-      filter(g==500) %>%
+      filter(g==300) %>%
       filter(prob >= 0.01) %>%
       pull(pattern)
     relative_df <- relative_df %>%
@@ -110,7 +110,7 @@ read_and_reformat <- function(filepath, normalize=FALSE) {
     return(df_plot)
   } else {
     keep <- df %>% gather(g, prob, -pattern) %>%
-      filter(g==500) %>% filter(prob >= 0.01) %>%
+      filter(g==300) %>% filter(prob >= 0.01) %>%
       pull(pattern)
     df_plot <- df %>%
       gather(g, prob, -pattern) %>%
@@ -175,7 +175,7 @@ names(myColors) <- levels
 ## define plotting functions ------
 plot_patterns <- function(df_plot, colors=myColors, relative = FALSE) {
   # takes in the data frame and plots it as a function of sample size g
-  plot_levels <- function(df_plot, max_g=500) {
+  plot_levels <- function(df_plot, max_g=300) {
     #max_g <- df_plot$g %>% max()
     plot_levels <- df_plot %>%
       filter(g==max_g) %>%
