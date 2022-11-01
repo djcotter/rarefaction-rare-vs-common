@@ -40,6 +40,7 @@ rule all:
         fig2 = expand(path.join('figures', '{chr}_g-{g}_{sample_size}-snps_{singletons}Singletons_network.pdf'),
                       chr=22,
                       g=500,
+                      singletons="no",
                       sample_size="all"),
         fig3 = expand(path.join('figures', '{chr}_pattern-match-probs_{sample_size}-snps.pdf'),
                       chr=22,
@@ -179,7 +180,7 @@ rule calculate_various_g_allele_patterns:
         threshold = 0.05,
         sample = lambda wildcards: 0 if wildcards.sample_size == 'all' else wildcards.sample_size,
         singletons = lambda wildcards: '--drop-singletons' if wildcards.singletons == "no" else '',
-        cores = 16
+        cores = 5
     output:
         path.join('data', 'patterns', '{chr}_patterns_{sample_size}-snps_{singletons}Singletons.txt'),
         path.join('data', 'patterns', 
