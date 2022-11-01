@@ -172,7 +172,8 @@ rule calculate_various_g_allele_patterns:
         chr = lambda wildcards: wildcards.chr,
         threshold = 0.05,
         sample = lambda wildcards: 0 if wildcards.sample_size == 'all' else wildcards.sample_size,
-        singletons = lambda wildcards: '--drop-singletons' if wildcards.singletons == "no" else ''
+        singletons = lambda wildcards: '--drop-singletons' if wildcards.singletons == "no" else '',
+        cores = 16
     output:
         path.join('data', 'patterns', '{chr}_patterns_{sample_size}-snps_{singletons}Singletons.txt'),
         path.join('data', 'patterns', 
@@ -182,4 +183,4 @@ rule calculate_various_g_allele_patterns:
 
     shell:
         "Rscript --vanilla {params.script} --chr {params.chr} --threshold {params.threshold} "
-        "--sample {params.sample} {params.singletons}"
+        "--sample {params.sample} {params.singletons} --ncores {params.cores}"
