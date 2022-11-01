@@ -16,3 +16,10 @@ dependencies:
   - r-base
   - r-tidyverse
   - r-optparse
+  - r-ggpubr
+  - r-ggrepel
+  - r-lemon
+  - r-gmp
+  - r-rcolorbrewer
+  - r-foreach
+  - r-doparallel

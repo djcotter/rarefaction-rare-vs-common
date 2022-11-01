@@ -14,10 +14,6 @@ library(grid)
 library(ggrepel)
 library(lemon)
 
-## load packages -------
-suppressPackageStartupMessages(require(tidyverse))
-library(optparse)
-
 ## parse arguments ------
 option_list <- list(
   make_option(c("--wSingletons"),
@@ -34,7 +30,10 @@ option_list <- list(
               help = "path to actual empirical patterns WITHOUT singletons"),
   make_option(c("--prob-threshold"),
               type = "numeric", default = 0.01,
-              help = "pattern probability threshold to plot")
+              help = "pattern probability threshold to plot"),
+  make_option(c("--output"),
+              type= "character", default = NULL,
+              help = "path to output file")
 )
 
 opt_parser = OptionParser(option_list=option_list)
@@ -50,20 +49,27 @@ if ( is.null(opt$noSingletons) ) {
   stop("Must provide a file with patterns without singletons", call.=FALSE)
 }
 
-if ( is.null(opt$actual) ) {
+if ( is.null(opt$`actual-wSingletons`) ) {
   print_help(opt_parser)
-  stop("Must provide a file with actual emprical pattern freqs", call.=FALSE)
+  stop("Must provide a file with actual emprical pattern freqs (w singletons)", call.=FALSE)
 }
 
-# temp file paths ------ REMOVE 
-opt$wSingletons <- '~/Projects/rarefaction-project/data/patterns/22_patterns_100000-snps_wSingletons.txt'
-opt$noSingletons <- '~/Projects/rarefaction-project/data/patterns/22_patterns_100000-snps_noSingletons.txt'
-opt$`actual-wSingletons` <- '~/Projects/rarefaction-project/data/patterns/22_actualPattern_100000-snps_wSingletons.txt'
-opt$`actual-noSingletons` <- '~/Projects/rarefaction-project/data/patterns/22_actualPattern_100000-snps_noSingletons.txt'
+if ( is.null(opt$`actual-noSingletons`) ) {
+  print_help(opt_parser)
+  stop("Must provide a file with actual emprical pattern freqs (no singletons)", call.=FALSE)
+}
+
+if ( is.null(opt$output) ) {
+  print_help(opt_parser)
+  stop("Must provide an output file", call.=FALSE)
+}
+
+# set g to arrange patterns and color by
+filter_by <- 250
 
 ## create output directory if non existent ------------------
-if (!file.exists(file.path("data", "figures"))) {
-  dir.create(file.path("data", "figures"), showWarnings = FALSE)
+if (!file.exists(file.path("figures"))) {
+  dir.create(file.path("figures"), showWarnings = FALSE)
 }
 
 ## read in and format data files ----------------------------
@@ -93,7 +99,7 @@ read_and_reformat <- function(filepath, normalize=FALSE) {
       mutate(across(where(is.numeric), ~./sum(.))) %>%
       gather(g, prob, -pattern)
     keep <- relative_df %>%
-      filter(g==300) %>%
+      filter(g==filter_by) %>%
       filter(prob >= 0.01) %>%
       pull(pattern)
     relative_df <- relative_df %>%
@@ -110,7 +116,7 @@ read_and_reformat <- function(filepath, normalize=FALSE) {
     return(df_plot)
   } else {
     keep <- df %>% gather(g, prob, -pattern) %>%
-      filter(g==300) %>% filter(prob >= 0.01) %>%
+      filter(g==filter_by) %>% filter(prob >= 0.01) %>%
       pull(pattern)
     df_plot <- df %>%
       gather(g, prob, -pattern) %>%
@@ -146,36 +152,36 @@ levels <- all_colored_patterns %>%
   levels() %>%
   c('Other', .)
 
-set.seed(4)
-#myColors <- colorRampPalette(brewer.pal(12, "Set3"), )(length(levels)) %>% sample()
-myColors <- c(
-  "#d4a5b2",
-  "#74ca97",
-  "#b9b6cb",
-  "#9ccb7b",
-  "#a4cac1",
-  "#6696f0",
-  "#ccb59f",
-  "#66a1e5",
-  "#c8be85",
-  "#b89be3",
-  "#d4ab68",
-  "#58d5bc",
-  "#e38a7f",
-  "#68c2d9",
-  "#ccb557",
-  "#b2add6",
-  "#acc5a1",
-  "#e28cbe",
-  "#7fc4ca",
-  "#68b5e3"
-) 
+set.seed(5)
+myColors <- colorRampPalette(brewer.pal(12, "Set3"), )(25) %>% sample(length(levels))
+# myColors <- c(
+#   "#d4a5b2",
+#   "#74ca97",
+#   "#b9b6cb",
+#   "#9ccb7b",
+#   "#a4cac1",
+#   "#6696f0",
+#   "#ccb59f",
+#   "#66a1e5",
+#   "#c8be85",
+#   "#b89be3",
+#   "#d4ab68",
+#   "#58d5bc",
+#   "#e38a7f",
+#   "#68c2d9",
+#   "#ccb557",
+#   "#b2add6",
+#   "#acc5a1",
+#   "#e28cbe",
+#   "#7fc4ca",
+#   "#68b5e3"
+# ) 
 names(myColors) <- levels
 
 ## define plotting functions ------
 plot_patterns <- function(df_plot, colors=myColors, relative = FALSE) {
   # takes in the data frame and plots it as a function of sample size g
-  plot_levels <- function(df_plot, max_g=300) {
+  plot_levels <- function(df_plot, max_g=filter_by) {
     #max_g <- df_plot$g %>% max()
     plot_levels <- df_plot %>%
       filter(g==max_g) %>%
@@ -192,20 +198,33 @@ plot_patterns <- function(df_plot, colors=myColors, relative = FALSE) {
   }
   #y_label <- if_else(relative, "Relative probability", "Average probability")
   y_label <- "Probability"
-  max_g <- df_plot %>% pull(g) %>% max()
+  max_g <- df_plot %>% pull(g) %>% unique() %>% max()
+  if (relative) {
+    max_g_bound <- max_g - 20
+  } else {
+    max_g_bound <- max_g
+  }
   p <- ggplot(df_plot %>%
                 group_by(g, recolor) %>% 
                 summarise(prob=sum(prob)) %>%
                 mutate(label=ifelse(g==max_g, recolor, NA)) %>%
                 mutate(recolor=fct_relevel(recolor, pattern_levels)),
               aes(x=g, y=prob, fill=recolor)) +
-    geom_col(lwd=0.15, color='black') + scale_fill_manual(values=plot_colors(colors, pattern_levels)) +
+    geom_col(lwd=0.15, color='black') + 
+    scale_fill_manual(values=plot_colors(colors, pattern_levels)) +
     geom_text_repel(aes(label=label), position=position_stack(vjust=0.5), 
                     xlim=c(df_plot %>% pull(g) %>% max() +10, NA), 
-                    size=2, direction = "y", segment.size=0.2, box.padding = 0.1,
-                    force_pull=10, min.segment.length = 0.35) +
-    theme_pubr(legend = 'right') + xlab("Sample size (g)") + ylab(y_label) +
-    labs(fill="Pattern") + scale_x_continuous(breaks=c(10,100,200,300,400,500), expand = c(0,0), limits = c(0,max_g+60)) + scale_y_continuous(expand=c(0,0)) +
+                    size=1.8, direction = "y",
+                    segment.size=0.2, box.padding = 0.1,
+                    force_pull=100, min.segment.length = 0.25) +
+    theme_pubr(legend = 'right') +
+    xlab("Sample size (g)") +
+    ylab(y_label) +
+    labs(fill="Pattern") + 
+    scale_x_continuous(breaks=c(10,100,200,300,400,500),
+                       expand = c(0,0),
+                       limits = c(0,max_g_bound+100)) +
+    scale_y_continuous(expand=c(0,0)) +
     coord_capped_cart(bottom="right")
   return(p)
 }
@@ -215,19 +234,19 @@ p1 <- plot_patterns(df_wSingletons)
 p2 <- plot_patterns(df_noSingletons)
 p3 <- plot_patterns(df_wSingletons_relative, relative=TRUE)
 p4 <- plot_patterns(df_noSingletons_relative, relative=TRUE)
-p <- ggarrange(p1, p3, p2, p4,
+p <- ggarrange(p1, p2, p3, p4,
                nrow = 2, ncol=2,
                widths=c(1, 1),
                labels="AUTO",
                legend = "none")
-p
+ggsave(p, filename = opt$output, width = 190, height=170, units='mm')
 
 legend1 <- get_legend(p1)
 legend2 <- get_legend(p2)
 legend3 <- get_legend(p3)
 legend4 <- get_legend(p4)
 legends <- ggarrange(legend1, legend3, legend2, legend4, nrow=1)
-ggsave(legends, filename='~/Downloads/test_legend1.pdf', height=6)
+ggsave(legends, filename=paste0(tools::file_path_sans_ext(opt$output), "_legend.pdf"), height=6)
 
 
-ggsave(p, filename = '~/Downloads/test_chr22_patterns.pdf', width = 190, height=170, units='mm')
+

@@ -1,14 +1,14 @@
 """
-chrX_regional_variation
+rearefaction-project
 Snakefile
 Daniel Cotter
 
-analyze diversity and LD across chrX and chrY from 1000 genomes data
+analyze geographic distribution of alleles, correcting for sample size
 ---------------------------------------------------------------------
 
 Requires:
     conda
-        to activate the included PAB_variation.yml environment
+        to activate the included environment.yml environment
     snakemake
         included in the Conda environment
 """
@@ -34,10 +34,16 @@ CHROMS = [x for x in range(1, 23)]  # list from 1 to 22
 # declare rules -------------------
 rule all:
     input:
-        expand(path.join('data',
-                         'allele_counts',
-                         'chr{CHR}_counts_{CAT}.txt'),
-               CHR=CHROMS, CAT=['superpops'])
+        fig1 = expand(path.join('figures', '{chr}_patterns_{sample_size}-snps_by_g.pdf'),
+                      chr=22,
+                      sample_size="all"),
+        fig2 = expand(path.join('figures', '{chr}_g-{g}_{sample_size}-snps_{singletons}Singletons_network.pdf'),
+                      chr=22,
+                      g=500,
+                      sample_size="all"),
+        fig3 = expand(path.join('figures', '{chr}_pattern-match-probs_{sample_size}-snps.pdf'),
+                      chr=22,
+                      sample_size="all")
 
 rule filter_raw_data:
     """
@@ -184,3 +190,74 @@ rule calculate_various_g_allele_patterns:
     shell:
         "Rscript --vanilla {params.script} --chr {params.chr} --threshold {params.threshold} "
         "--sample {params.sample} --ncores {params.cores} {params.singletons}"
+
+rule prepare_network_data:
+    """
+    Take the output of the pattern calculations and process it for plotting the network figure
+    """
+    input:
+        path.join('data', 'patterns', '{chr}_patterns_{sample_size}-snps_{singletons}Singletons.txt')
+    params:
+        script = path.join('src', 'prepare_network_pattern_data.R'),
+        g = lambda wildcards: wildcards.g
+    output:
+        path.join('data', 'tmp', '{chr}_g-{g}_{sample_size}-snps_{singletons}Singletons.txt')
+    shell: 
+        "Rscript --vanilla {params.script} --input {input} --g_filter {params.g} --output {output}"
+
+rule plot_pattern_network:
+    """
+    Plot a 21 node network displaying the proportions of pattern probabilities across a chromosome
+    """
+    input:
+        path.join('data', 'tmp', '{chr}_g-{g}_{sample_size}-snps_{singletons}Singletons.txt')
+    params:
+        script = path.join('src', 'network_drawing.py')
+    output:
+        path.join('figures', '{chr}_g-{g}_{sample_size}-snps_{singletons}Singletons_network.pdf')
+    shell:
+        "python {script.params} {input} {output}"
+
+rule plot_patterns_vs_g:
+    """
+    Take the output of the rule calculate_various_g_allele_patterns and plot a four panel
+    figure displaying how geographic patterns change as a function of the pop sample size g.
+    R script.
+    """
+    input:
+        wSingletons = path.join('data', 'patterns',
+                                '{chr}_patterns_{sample_size}-snps_wSingletons.txt'),
+        noSingletons = path.join('data', 'patterns',
+                                 '{chr}_patterns_{sample_size}-snps_noSingletons.txt'),
+        actual_wSingletons = path.join('data', 'patterns',
+                                       '{chr}_actualPattern_{sample_size}-snps_wSingletons.txt'),
+        actual_noSingletons = path.join('data', 'patterns',
+                                       '{chr}_actualPattern_{sample_size}-snps_noSingletons.txt')
+    params:
+        script = path.join('src', 'plot_patterns_vs_sample_size.R')
+    output:
+        plot = path.join('figures', '{chr}_patterns_{sample_size}-snps_by_g.pdf'),
+        legend = path.join('figures', '{chr}_patterns_{sample_size}-snps_by_g_legend.pdf')
+    shell:
+        "Rscript --vanilla {params.script} --wSingletons {input.wSingletons} "
+        "--noSingletons {input.noSingletons} --actual-wSingletons {input.actual_wSingletons} "
+        "--actual-noSingletons {input.actual_noSingletons} --output {output.plot}"
+
+rule plot_match_rate:
+    """
+    Take the match probabilities from the rule calculate_various_g_allele_patterns to plot
+    how the prbobability of matching the empirical data changes as a function of the population
+    sample size g
+    """
+    input:
+        wSingletons = path.join('data', 'patterns', 
+                  '{chr}_pattern-match-proportions_{sample_size}-snps_wSingletons.txt'),
+        noSingletons = path.join('data', 'patterns', 
+                  '{chr}_pattern-match-proportions_{sample_size}-snps_noSingletons.txt')
+    params:
+        script = path.join('src', 'plot_match_probs.R')
+    output:
+        path.join('figures', '{chr}_pattern-match-probs_{sample_size}-snps.pdf')
+    shell:
+        "Rscript --vanilla {params.script} --wSingletons {input.wSingletons} "
+        "--noSingletons {input.noSingletons} --output {output}"
