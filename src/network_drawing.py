@@ -63,8 +63,8 @@ for i, row in proportion_file.iterrows():
 # %%
 
 node_labels = {row['node']: f'<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="2">'
-                            f'<TR><TD><FONT POINT-SIZE="200"><B>({row["node"].replace(",",", ")})</B></FONT></TD></TR><TR><TD></TD></TR>'
-                            f'<TR><TD><FONT POINT-SIZE="164">{prop_values[row["node"]]}</FONT></TD></TR></TABLE>>' 
+                            f'<TR><TD><FONT POINT-SIZE="40"><B>({row["node"].replace(",",", ")})</B></FONT></TD></TR><TR><TD></TD></TR>'
+                            f'<TR><TD><FONT POINT-SIZE="36">{prop_values[row["node"]]}</FONT></TD></TR></TABLE>>' 
                             for i, row in proportion_file.iterrows()}
 #node_labels = {row['node']: '{{{}U{}R{}C | {}}}'.format(row["node"][0],row["node"][2], row["node"][4], row["prop"]) for i, row in proportion_file.iterrows()}
 
@@ -83,8 +83,10 @@ A.layout(prog="neato", args="-n")
 A.node_attr["shape"] = "box"
 A.node_attr["style"] = "rounded,filled,solid"
 A.graph_attr["overlap"] = "scale"
-A.node_attr["penwidth"] = "12"
-A.edge_attr["penwidth"] = "10"
-A.graph_attr["size"] = "8,8"
-A.graph_attr["ratio"] = "fill"
+A.node_attr["penwidth"] = "4"
+A.edge_attr["penwidth"] = "5"
+A.graph_attr["size"] = "5.5,5.5"
+A.graph_attr["ratio"] = "1"
 A.draw(outfile, prog="neato", args="-n")  # Draw with pygraphviz
+
+# %%
