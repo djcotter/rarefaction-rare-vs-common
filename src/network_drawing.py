@@ -6,9 +6,12 @@ import numpy as np
 import pygraphviz
 from sys import argv
 import os
+import re
 
 # %%
-script, infile, outfile = argv
+# script, infile, outfile = argv
+infile = 'etc/22_g-500_all-snps_patterns.txt'
+outfile = 'figures/test.pdf'
 
 # %%
 A = pd.read_csv('data/ref_files/unordered_patterns_adjacency_matrix.csv', index_col=0, header=0)
@@ -61,7 +64,6 @@ for i, row in proportion_file.iterrows():
     prop_values[row["node"]] = sci_val
 
 # %%
-
 node_labels = {row['node']: f'<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="2">'
                             f'<TR><TD><FONT POINT-SIZE="40"><B>({row["node"].replace(",",", ")})</B></FONT></TD></TR><TR><TD></TD></TR>'
                             f'<TR><TD><FONT POINT-SIZE="36">{prop_values[row["node"]]}</FONT></TD></TR></TABLE>>' 
@@ -77,6 +79,11 @@ nx.set_node_attributes(G, prop_colors, 'fillcolor')
 # %%
 if not os.path.exists('figures'):
     os.mkdir('figures')
+
+# %%
+g_label = re.match(r'\d+_g-(\d+)_.*', os.path.basename(infile)).group(1)
+plot_label = f"g = {g_label}"
+
 # %%
 A = nx.nx_agraph.to_agraph(G)  # convert to a graphviz graph
 A.layout(prog="neato", args="-n")
@@ -87,6 +94,10 @@ A.node_attr["penwidth"] = "4"
 A.edge_attr["penwidth"] = "5"
 A.graph_attr["size"] = "5.5,5.5"
 A.graph_attr["ratio"] = "1"
+A.graph_attr["label"] = plot_label
+A.graph_attr["labelloc"] = "bottom"
+A.graph_attr["labeljust"] = "right"
+A.graph_attr["fontsize"] = 100
 A.draw(outfile, prog="neato", args="-n")  # Draw with pygraphviz
 
 # %%
