@@ -46,7 +46,7 @@ def colorFunc(c1,c2,prop):
     else:
         return(colorFader(c1,c2,0))
 
-def colorFunc2(c1,c2,prop,cap=0.15,scale=2/3):
+def colorFunc2(c1,c2,prop,cap=0.1,scale=2/3):
     if prop > cap:
         return(colorFader(c1,c2,1*scale))
     else:
@@ -70,7 +70,7 @@ for i, row in proportion_file.iterrows():
 
 # %%
 node_labels = {row['node']: f'<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="2">'
-                            f'<TR><TD><FONT POINT-SIZE="40"><B>({row["node"].replace(",",", ")})</B></FONT></TD></TR><TR><TD></TD></TR>'
+                            f'<TR><TD><FONT POINT-SIZE="45"><B>({row["node"].replace(",",", ")})</B></FONT></TD></TR><TR><TD></TD></TR>'
                             f'<TR><TD><FONT POINT-SIZE="32">{prop_values[row["node"]]}</FONT></TD></TR></TABLE>>' 
                             for i, row in proportion_file.iterrows()}
 #node_labels = {row['node']: '{{{}U{}R{}C | {}}}'.format(row["node"][0],row["node"][2], row["node"][4], row["prop"]) for i, row in proportion_file.iterrows()}
@@ -97,12 +97,10 @@ A.node_attr["style"] = "rounded,filled,solid"
 A.graph_attr["overlap"] = "scale"
 A.node_attr["penwidth"] = "4"
 A.edge_attr["penwidth"] = "5"
-A.graph_attr["size"] = "5.5,5.5"
-A.graph_attr["ratio"] = "1"
+A.graph_attr["size"] = "5.5"
+A.graph_attr["ratio"] = "expand"
 A.graph_attr["label"] = plot_label
 A.graph_attr["labelloc"] = "bottom"
 A.graph_attr["labeljust"] = "right"
 A.graph_attr["fontsize"] = 100
 A.draw(outfile, prog="neato", args="-n")  # Draw with pygraphviz
-
-# %%
