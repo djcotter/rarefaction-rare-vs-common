@@ -25,7 +25,8 @@ layer = {row['node']: row['x'] for i, row in attrs.iterrows()}
 nx.set_node_attributes(G, layer, 'layer')
 
 # %%
-sx = 2
+sx = 2.3
+
 nx.set_node_attributes(G, nx.multipartite_layout(G, subset_key="layer", scale=3), "pos")
 for n in G:
     G.nodes[n]['pos'] = "{},{}!".format(G.nodes[n]['pos'][0]*sx, G.nodes[n]['pos'][1])
