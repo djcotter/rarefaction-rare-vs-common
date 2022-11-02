@@ -9,9 +9,7 @@ import os
 import re
 
 # %%
-# script, infile, outfile = argv
-infile = 'etc/22_g-500_all-snps_patterns.txt'
-outfile = 'figures/test.pdf'
+script, infile, outfile = argv
 
 # %%
 A = pd.read_csv('data/ref_files/unordered_patterns_adjacency_matrix.csv', index_col=0, header=0)
@@ -48,6 +46,13 @@ def colorFunc(c1,c2,prop):
     else:
         return(colorFader(c1,c2,0))
 
+def colorFunc2(c1,c2,prop,cap=0.15,scale=2/3):
+    if prop > cap:
+        return(colorFader(c1,c2,1*scale))
+    else:
+        prop = prop/cap
+        return(colorFader(c1,c2,prop*scale))
+
 # %%
 # add proportion data to graph
 proportion_file = pd.read_csv(infile, sep='\t', header=0)
@@ -56,7 +61,7 @@ proportion_file = pd.read_csv(infile, sep='\t', header=0)
 #node_labels = {row['node']: f'<{{<B>{row["node"][0]}U{row["node"][2]}R{row["node"][4]}C</B>|<FONT POINT-SIZE="10.0">{round(row["prop"],4)}</FONT>}}>' for i, row in proportion_file.iterrows()}
 prop_values = {}
 for i, row in proportion_file.iterrows():
-    if row["prop"] < 0.0001:
+    if row["prop"] > 0 and row["prop"] < 0.0001:
         decim, expon = f"{row['prop']:.2e}".split("e")
         sci_val = decim + '&#x00B7;10<sup>' + expon.replace('0','') + "</sup>"
     else:
@@ -66,14 +71,14 @@ for i, row in proportion_file.iterrows():
 # %%
 node_labels = {row['node']: f'<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="2">'
                             f'<TR><TD><FONT POINT-SIZE="40"><B>({row["node"].replace(",",", ")})</B></FONT></TD></TR><TR><TD></TD></TR>'
-                            f'<TR><TD><FONT POINT-SIZE="36">{prop_values[row["node"]]}</FONT></TD></TR></TABLE>>' 
+                            f'<TR><TD><FONT POINT-SIZE="32">{prop_values[row["node"]]}</FONT></TD></TR></TABLE>>' 
                             for i, row in proportion_file.iterrows()}
 #node_labels = {row['node']: '{{{}U{}R{}C | {}}}'.format(row["node"][0],row["node"][2], row["node"][4], row["prop"]) for i, row in proportion_file.iterrows()}
 
 nx.set_node_attributes(G, node_labels, 'label')
 
 # %%
-prop_colors = {row['node']: colorFunc("white", "red", row['prop']) for i, row in proportion_file.iterrows()}
+prop_colors = {row['node']: colorFunc2("white", "red", row['prop']) for i, row in proportion_file.iterrows()}
 nx.set_node_attributes(G, prop_colors, 'fillcolor')
 
 # %%
@@ -82,7 +87,7 @@ if not os.path.exists('figures'):
 
 # %%
 g_label = re.match(r'\d+_g-(\d+)_.*', os.path.basename(infile)).group(1)
-plot_label = f"g = {g_label}"
+plot_label = f"g = {g_label:4}"
 
 # %%
 A = nx.nx_agraph.to_agraph(G)  # convert to a graphviz graph
