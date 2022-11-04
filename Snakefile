@@ -26,7 +26,7 @@ SUPERPOPULATIONS = sorted(json.load(open(config['POP_CODES']))['SUPERPOP'])
 POPULATIONS = sorted(json.load(open(config['POP_CODES']))['POP'])
 
 POP_LIST = ['ALL'] + SUPERPOPULATIONS + POPULATIONS
-G_LIST = list(range(10,301,10))
+G_LIST = list(range(10,501,10))
 
 # global variables
 CHROMS = [x for x in range(1, 23)]  # list from 1 to 22
@@ -215,7 +215,7 @@ rule plot_pattern_network:
     params:
         script = path.join('src', 'network_drawing.py')
     output:
-        path.join('figures', '{chr}_g-{g}_{sample_size}-snps_{singletons}Singletons_network.pdf')
+        path.join('figures', '{chr}_g-{g}_{sample_size}-snps_{singletons}Singletons_network.{ext}')
     shell:
         "python {params.script} {input} {output}"
 

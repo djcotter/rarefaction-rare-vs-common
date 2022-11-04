@@ -10,7 +10,8 @@ import re
 
 # %%
 script, infile, outfile = argv
-
+font = "Times"
+fontsize = 150
 # %%
 A = pd.read_csv('data/ref_files/unordered_patterns_adjacency_matrix.csv', index_col=0, header=0)
 
@@ -25,11 +26,12 @@ layer = {row['node']: row['x'] for i, row in attrs.iterrows()}
 nx.set_node_attributes(G, layer, 'layer')
 
 # %%
-sx = 2.3
+sx = 200
+sy = 150
 
 nx.set_node_attributes(G, nx.multipartite_layout(G, subset_key="layer", scale=3), "pos")
 for n in G:
-    G.nodes[n]['pos'] = "{},{}!".format(G.nodes[n]['pos'][0]*sx, G.nodes[n]['pos'][1])
+    G.nodes[n]['pos'] = "{},{}!".format(G.nodes[n]['pos'][0]*sx, G.nodes[n]['pos'][1]*sy)
 
 # %%
 def colorFader(c1,c2,mix=0): #fade (linear interpolate) from color c1 (at mix=0) to c2 (mix=1)
@@ -71,8 +73,8 @@ for i, row in proportion_file.iterrows():
 
 # %%
 node_labels = {row['node']: f'<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="2">'
-                            f'<TR><TD><FONT POINT-SIZE="45"><B>({row["node"].replace(",",", ")})</B></FONT></TD></TR><TR><TD></TD></TR>'
-                            f'<TR><TD><FONT POINT-SIZE="32">{prop_values[row["node"]]}</FONT></TD></TR></TABLE>>' 
+                            f'<TR><TD><FONT FACE="{font}" POINT-SIZE="{fontsize}"><B>({row["node"].replace(",",", ")})</B></FONT></TD></TR><TR><TD></TD></TR>'
+                            f'<TR><TD><FONT FACE="{font}" POINT-SIZE="{fontsize*0.85}">{prop_values[row["node"]]}</FONT></TD></TR></TABLE>>' 
                             for i, row in proportion_file.iterrows()}
 #node_labels = {row['node']: '{{{}U{}R{}C | {}}}'.format(row["node"][0],row["node"][2], row["node"][4], row["prop"]) for i, row in proportion_file.iterrows()}
 
@@ -96,12 +98,20 @@ A.layout(prog="neato", args="-n")
 A.node_attr["shape"] = "box"
 A.node_attr["style"] = "rounded,filled,solid"
 A.graph_attr["overlap"] = "scale"
-A.node_attr["penwidth"] = "4"
-A.edge_attr["penwidth"] = "5"
-A.graph_attr["size"] = "5.5"
-A.graph_attr["ratio"] = "expand"
+A.node_attr["penwidth"] = "18"
+A.node_attr["margin"] = "0"
+A.edge_attr["penwidth"] = "20"
+A.graph_attr["margin"] = "0.3"
+#A.graph_attr["nodesep"] = "2"
+A.graph_attr["size"] = "11,7"
+A.graph_attr["ratio"] = "fill"
 A.graph_attr["label"] = plot_label
 A.graph_attr["labelloc"] = "bottom"
 A.graph_attr["labeljust"] = "right"
-A.graph_attr["fontsize"] = 100
+A.graph_attr["fontsize"] = fontsize*3
+A.graph_attr["fontname"] = font
+A.graph_attr["dpi"] = "300"
 A.draw(outfile, prog="neato", args="-n")  # Draw with pygraphviz
+A.write("figures/out.dot")
+
+# %%
