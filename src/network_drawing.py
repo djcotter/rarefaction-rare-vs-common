@@ -12,6 +12,8 @@ import re
 script, infile, outfile = argv
 font = "Times"
 fontsize = 150
+shade_color = "#c6a1d1"
+make_label = False
 # %%
 A = pd.read_csv('data/ref_files/unordered_patterns_adjacency_matrix.csv', index_col=0, header=0)
 
@@ -61,27 +63,37 @@ def colorFunc2(c1,c2,prop,cap=0.1,scale=2/3):
 proportion_file = pd.read_csv(infile, sep='\t', header=0)
 
 # %%
-#node_labels = {row['node']: f'<{{<B>{row["node"][0]}U{row["node"][2]}R{row["node"][4]}C</B>|<FONT POINT-SIZE="10.0">{round(row["prop"],4)}</FONT>}}>' for i, row in proportion_file.iterrows()}
-prop_values = {}
+prop_labels = {}
+fontscale = 1
 for i, row in proportion_file.iterrows():
     if row["prop"] > 0 and row["prop"] < 0.0001:
         decim, expon = f"{row['prop']:.2e}".split("e")
-        sci_val = decim + '&#x00B7;10<sup>' + expon.replace('0','') + "</sup>"
+        sci_val = decim + '&#x00B7;10<sup>' + str(int(expon.replace('0',''))+2) + "</sup>%"
+        prop_labels[row["node"]] = (
+            f'<TR><TD><FONT FACE="{font}" POINT-SIZE="{fontsize*0.65}">{sci_val}</FONT>'
+            f'<FONT FACE="{font}" POINT-SIZE="{fontsize*0.85}"> </FONT>'
+            f'</TD></TR>'
+        )                    
     else:
         sci_val = f"{row['prop']:.2%}"
-    prop_values[row["node"]] = sci_val
+        fontscale = 0.85
+        prop_labels[row["node"]] = (
+            f'<TR><TD><FONT FACE="{font}" POINT-SIZE="{fontsize*0.85}">'
+            f'{sci_val}</FONT></TD></TR>'
+        )
 
 # %%
 node_labels = {row['node']: f'<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="2">'
-                            f'<TR><TD><FONT FACE="{font}" POINT-SIZE="{fontsize}"><B>({row["node"].replace(",",", ")})</B></FONT></TD></TR><TR><TD></TD></TR>'
-                            f'<TR><TD><FONT FACE="{font}" POINT-SIZE="{fontsize*0.85}">{prop_values[row["node"]]}</FONT></TD></TR></TABLE>>' 
+                            f'<TR><TD><FONT FACE="{font}" POINT-SIZE="{fontsize}">'
+                            f'<B>({row["node"].replace(",",", ")})</B>'
+                            f'</FONT></TD></TR><TR><TD></TD></TR>'
+                            f'{prop_labels[row["node"]]}</TABLE>>'
                             for i, row in proportion_file.iterrows()}
-#node_labels = {row['node']: '{{{}U{}R{}C | {}}}'.format(row["node"][0],row["node"][2], row["node"][4], row["prop"]) for i, row in proportion_file.iterrows()}
 
 nx.set_node_attributes(G, node_labels, 'label')
 
 # %%
-prop_colors = {row['node']: colorFunc2("white", "red", row['prop']) for i, row in proportion_file.iterrows()}
+prop_colors = {row['node']: colorFunc2("white", shade_color, row['prop'], scale=1) for i, row in proportion_file.iterrows()}
 nx.set_node_attributes(G, prop_colors, 'fillcolor')
 
 # %%
@@ -101,17 +113,18 @@ A.graph_attr["overlap"] = "scale"
 A.node_attr["penwidth"] = "18"
 A.node_attr["margin"] = "0"
 A.edge_attr["penwidth"] = "20"
-A.graph_attr["margin"] = "0.3"
+A.graph_attr["margin"] = "0.25,0.25"
 #A.graph_attr["nodesep"] = "2"
-A.graph_attr["size"] = "11,7"
+A.graph_attr["size"] = "3.5,2.3"
 A.graph_attr["ratio"] = "fill"
-A.graph_attr["label"] = plot_label
-A.graph_attr["labelloc"] = "bottom"
-A.graph_attr["labeljust"] = "right"
-A.graph_attr["fontsize"] = fontsize*3
+if make_label:
+    A.graph_attr["label"] = plot_label
+    A.graph_attr["labelloc"] = "bottom"
+    A.graph_attr["labeljust"] = "right"
+    A.graph_attr["fontsize"] = fontsize*2.5
 A.graph_attr["fontname"] = font
 A.graph_attr["dpi"] = "300"
 A.draw(outfile, prog="neato", args="-n")  # Draw with pygraphviz
-A.write("figures/out.dot")
+#A.write("figures/out.dot")
 
 # %%
