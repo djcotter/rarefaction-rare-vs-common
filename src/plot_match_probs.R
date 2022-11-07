@@ -65,7 +65,8 @@ p3 <- ggplot(df_match %>% mutate(g=as.numeric(g)), aes(x=g, y=prob)) +
   labs(lty="") +
   scale_x_continuous(breaks=c(10,100,200,300,400,500), expand = c(0.005,0.005)) +
   scale_y_continuous(limits = c(0,1), expand=c(0.005,0.005)) +
-  theme(legend.justification = c(1,0), legend.position = c(0.9,0.1),
-        legend.key.width = unit(2.5, "line"))
+  theme(legend.justification = c(1,0), legend.position = c(0.99,0.09),
+        legend.key.width = unit(2.5, "line"), legend.background = element_rect(fill=NA)) +
+  theme(plot.margin = margin(0.25,0.25,0.25,0.25, unit = "in"))
 
-ggsave(p3, filename=opt$output, width=4, height=4)
+ggsave(p3, filename=opt$output, width=3.5, height=3.5)
