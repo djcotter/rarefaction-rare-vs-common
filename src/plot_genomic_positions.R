@@ -11,199 +11,30 @@ library(RColorBrewer)
 ## temp stuff
 setwd('~/Projects/rarefaction-project/')
 pop_label = "superpops"
-CHR = 1
-g = 300
+CHR = 22
+g = 500
 z = 0.05
 DROP_SINGLETONS = TRUE
 
 ## read in superpop data -----
-df <- read.table(file.path('data', 'allele_counts', paste('chr', CHR, '_counts_', pop_label, '.txt', sep="")), header = TRUE)
-
-# temporarily subset the sample size down
-# set.seed(1)
-# df_sub <- df %>% sample_n(100000, replace=FALSE)
-# df <- df_sub %>% tibble()
-
-df_long <- df %>% 
-  gather(pop, counts, -c(chr:major)) %>% 
-  select(-c(minor:major)) %>% 
-  separate(counts, into=c('minor', 'major'), sep="/") %>%
-  mutate(minor=as.integer(minor), major=as.integer(major))
-
-rm(list=c('df'))
-
-# remove alleles for which there is no globally "minor" allele (i.e both = 50%)
-df_long <- df_long %>% filter(!is.na(minor))
-
-# drop non-biallelic sites
-drop <- df_long %>% 
-  group_by(pos) %>% 
-  summarise(tot_minor = sum(minor)) %>% 
-  filter(tot_minor==0) %>% 
-  pull(pos)
-df_long <- df_long %>% filter(!(pos %in% drop))
-
-# drop singletons if necessary
-if (DROP_SINGLETONS) {
-  drop1 <- df_long %>% 
-    group_by(pos) %>% 
-    summarise(tot_minor = sum(minor)) %>% 
-    filter(tot_minor==1) %>% 
-    pull(pos)
-  df_long <- df_long %>% filter(!(pos %in% drop1))
-}
-
-# ## grab the actual patterns for each locus
-# actual_patterns <- df_long %>% 
-#   mutate(freq=minor/(minor+major)) %>% 
-#   mutate(code=ifelse(freq==0, 'U', ifelse(freq<0.05, 'R', 'C'))) %>% 
-#   select(-c(tot_alleles, minor, major, freq)) %>% 
-#   spread(pop, code) %>% 
-#   mutate(pattern=paste(AFR, EUR, SAS, EAS, AMR, sep="")) %>% 
-#   select(pos, pattern)
-
-## define functions to calculate the probability of (U)nobserved or (R)are -----
-# (C)ommon is defined by 1 - U - R
-
-U_matrix <- function(minor, major, g) {
-  U_prob <- function(minor, major, g) {
-    g = rep(g, length(minor))
-    U <- choose(major, g) / choose(minor+major, g)
-    return(U)
-  }
-  mat <- data.frame(minor=minor,major=major) %>% distinct()
-  mat <- mat %>% mutate(U=round(U_prob(minor, major, g),6))
-  mat <- mat %>% pivot_wider(names_from = major, values_from = U)
-  mat <- mat %>% column_to_rownames('minor')
-  return(as.matrix(mat))
-}
-
-R_matrix <- function(minor, major, g, z) {
-  R_prob <- function(minor, major, g, z) {
-    g <- rep(g, length(minor))
-    cutoff <- ceiling(z*(minor+major)) -1
-    R <- mapply(function(N1, N2, g, k) {i=1:k; sum( choose(N1, i) * choose(N2, g-i) )}, minor, major, g, cutoff, SIMPLIFY = TRUE) / (choose(minor+major, g))
-    return(R)
-  }
-  mat <- data.frame(minor=minor,major=major) %>% distinct()
-  mat <- mat %>% mutate(R=round(R_prob(minor, major, g, z),6))
-  mat <- mat %>% pivot_wider(names_from = major, values_from = R)
-  mat <- mat %>% column_to_rownames('minor')
-  return(as.matrix(mat))
-}
-
-## define function to calculate probabilites   ----
-merge_codes <- function(..., log=FALSE, patterns) {
-  x <- data.frame(...) %>% expand.grid()
-  if (log) {
-    products <- log(x[[1]])
-    for (i in 2:length(x)) {
-      products <- products + log(x[[i]])
-    }
-  } else {
-    products <- x[[1]]
-    for (i in 2:length(x)) {
-      products <- products * x[[i]]
-    }
-  }
-  return(data.frame(pattern=patterns,prob=products) %>% filter(prob>0))
-}
-
-## calculate the three probabilites ----------
-print(g)
-# calculate lookup matrices for R and U
-U_mat <- U_matrix(df_long$minor, df_long$major, g)
-R_mat <- R_matrix(df_long$minor, df_long$major, g, z)
-
-# use the lookup matrices to calculat U, R, and C for each position / population pair
-df_probs <-
-  df_long %>% mutate(U = U_mat[cbind(as.character(minor), as.character(major))],
-                     R = R_mat[cbind(as.character(minor), as.character(major))]) %>%
-  mutate(C = round(1 - R - U, 6)) %>%
-  mutate(C = sapply(C, function(x) {
-    ifelse(x < 0, 0, x)
-  })) %>%
-  select(-minor,-major) %>%
-  gather(cat, prob, R, U, C) %>%
-  spread(pop, prob)
-# filter for loci where N_j for any population is less than g and remove them
-# (on chr22 only 115 loci have <300 for any given pop)
-df_probs <- df_probs %>% filter(across(everything(), ~ !is.na(.)))
-
-# get column of patterns
-pattern_vec <- data.frame(
-  a = c("C", "R", "U"),
-  b = c("C", "R", "U"),
-  c = c("C", "R", "U"),
-  d = c("C", "R", "U"),
-  e = c("C", "R", "U")
-) %>% expand.grid() %>%
-  unite(pattern, a:e, sep = "") %>% pull(pattern)
-
-
-df_probs <-
-  df_probs %>% group_by(chr, pos, tot_alleles) %>% arrange(pos, cat) %>%
-  do(merge_codes(
-    .$AFR,
-    .$EUR,
-    .$SAS,
-    .$EAS,
-    .$AMR,
-    log = FALSE,
-    patterns = pattern_vec
-  ))
-
- if (DROP_SINGLETONS) {
-  write.table(
-    df_probs,
-    file = paste(
-      '~/Projects/rarefaction-project/data/tmp/',
-      CHR,
-      '_',
-      g,
-      '_pattern_byPosition_noSingletons.txt',
-      sep = ""
-    ),
-    sep = '\t',
-    quote = FALSE,
-    row.names = FALSE,
-    col.names = TRUE
-  )
-} else {
-  write.table(
-    df_probs,
-    file = paste(
-      '~/Projects/rarefaction-project/data/tmp/',
-      CHR,
-      '_',
-      g,
-      '_pattern_byPosition.txt',
-      sep = ""
-    ),
-    sep = '\t',
-    quote = FALSE,
-    row.names = FALSE,
-    col.names = TRUE
-  )
-}
+df <- read.table('~/Projects/rarefaction-project/data/patterns/22_g-500_pattern_byPosition_all-snps_noSingletons.txt', header=T)
 
 combine_pattern <- function(pattern) {
   new_pattern <- paste(
-    str_count(pattern, 'C'),
-    'C',
-    str_count(pattern, 'R'),
-    'R',
+    '(',
     str_count(pattern, 'U'),
-    'U',
+    ',',
+    str_count(pattern, 'R'),
+    ',',
+    str_count(pattern, 'C'),
+    ')',
     sep = ''
   )
   return(new_pattern)
 }
 
 ## g = 300 (w/ singletons) ---------------------
-chr_patterns <- read.table(paste(
-  '~/Projects/rarefaction-project/data/tmp/',CHR,'_', g, '_pattern_byPosition.txt', sep=""),
-  header = T)
+chr_patterns <- df
 # set the size of the windows here
 win_size_txt = '100kb'
 win_size=100000
@@ -218,18 +49,48 @@ chr_window_pattern_vec <- chr_patterns %>%
   mutate(pattern_sum = sum(prob)) %>% 
   ungroup() %>% mutate(win_prob = pattern_sum/ win_sum) %>% 
   distinct(pattern, windows, .keep_all = T) %>% 
-  select(-tot_alleles, -pattern_sum, -prob, -win_sum) %>% 
+  select(-pattern_sum, -prob, -win_sum) %>% 
   mutate(pattern=combine_pattern(pattern))
 
 # color_pallete
-color_vec <- colorRampPalette(brewer.pal(12,"Set3"))(length(unique(chr_window_pattern_vec$pattern)))
+levels <- chr_window_pattern_vec$pattern %>% unique()
+myColors <- c(
+  "#8fb58d",
+  "#fab7d8",
+  "#b9ffde",
+  "#c6a1d1",
+  "#dae6ad",
+  "#a1a9df",
+  "#fbe0aa",
+  "#6bcfdb",
+  "#dd9c88",
+  "#9ef2ff",
+  "#d2b784",
+  "#d9d0ff",
+  "#abcb98",
+  "#ffd8e4",
+  "#6cb9aa",
+  "#ffd4cb",
+  "#d0faff",
+  "#a8af8f",
+  "#d3e7ff",
+  "#b7a8a4",
+  "#ffffea"
+)
+
+names(myColors) = levels
 
 p1 <- ggplot(chr_window_pattern_vec %>% 
-               mutate(pattern=fct_rev(pattern)), 
+               mutate(pattern=factor(pattern,levels=levels)) %>% 
+               group_by(pattern,windows) %>% 
+               select(-pos) %>% 
+               summarise(win_prob=sum(win_prob)), 
              aes(x=windows, y=win_prob, fill=pattern)) + 
-  geom_col() + scale_fill_manual('Pattern', values=color_vec) +6 
+  geom_col() + scale_fill_manual('Pattern', values=myColors) + 
   theme_pubr() + xlab('Position (Mb)') + ylab('Average Probability') +
-  guides(fill=guide_legend(ncol=1))
+  guides(fill=guide_legend(ncol=1)) + theme(legend.position='right') +
+  scale_x_continuous(expand=c(0,0)) + scale_y_continuous(expand=c(0,0))
+ggsave(p1,filename='~/Downloads/test_byPosition.pdf', width=7,height=5)
 
 ## Combine Patterns no UUUUU
 chr_window_pattern_vec_noU <- chr_patterns %>% 
