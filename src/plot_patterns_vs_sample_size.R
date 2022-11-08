@@ -152,30 +152,28 @@ levels <- all_colored_patterns %>%
   levels() %>%
   c('Other', .)
 
-#set.seed(5)
-#myColors <- colorRampPalette(brewer.pal(12, "Set3"), )(25) %>% sample(length(levels))
 myColors <- c(
-  "#8fb58d",
-  "#fab7d8",
-  "#b9ffde",
-  "#c6a1d1",
-  "#dae6ad",
-  "#a1a9df",
-  "#fbe0aa",
-  "#6bcfdb",
-  "#dd9c88",
-  "#9ef2ff",
-  "#d2b784",
-  "#d9d0ff",
-  "#abcb98",
-  "#ffd8e4",
-  "#6cb9aa",
-  "#ffd4cb",
-  "#d0faff",
-  "#a8af8f",
-  "#d3e7ff",
-  "#b7a8a4",
-  "#ffffea"
+  "#E8B063",
+  "#8CD2C6",
+  "#FFFFA4",
+  "#D3E2D9",
+  "#D2A5BE",
+  "#E7F9B8",
+  "#9BA7C1",
+  "#C6B2AB",
+  "#F6BF4A",
+  "#B2DE68",
+  "#EACFCD",
+  "#F7DBED",
+  "#CEC2CD",
+  "#BB7FBD",
+  "#BFCECC",
+  "#FA7F72",
+  "#E9E07E",
+  "#8CD2C6",
+  "#B1A5D6",
+  "#EFE7C5",
+  "#F6FD91"
 )
 myColors <- myColors[2:21]
 names(myColors) <- levels
