@@ -12,7 +12,7 @@ import re
 script, infile, outfile = argv
 font = "Times"
 fontsize = 150
-shade_color = "#c6a1d1"
+shade_color = "#8CD2C6"
 make_label = False
 # %%
 A = pd.read_csv('data/ref_files/unordered_patterns_adjacency_matrix.csv', index_col=0, header=0)

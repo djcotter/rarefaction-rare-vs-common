@@ -170,7 +170,7 @@ myColors <- c(
   "#BFCECC",
   "#FA7F72",
   "#E9E07E",
-  "#8CD2C6",
+  "#96BFC4",
   "#B1A5D6",
   "#EFE7C5",
   "#F6FD91"
