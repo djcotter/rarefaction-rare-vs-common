@@ -11,13 +11,13 @@ library(RColorBrewer)
 ## temp stuff
 setwd('~/Projects/rarefaction-project/')
 pop_label = "superpops"
-CHR = 22
+CHR = 6
 g = 500
 z = 0.05
 DROP_SINGLETONS = TRUE
 
 ## read in superpop data -----
-df <- read.table('~/Projects/rarefaction-project/data/patterns/22_g-500_pattern_byPosition_all-snps_noSingletons.txt', header=T)
+df <- read.table('~/Projects/rarefaction-project/data/patterns/6_g-500_pattern_byPosition_all-snps_noSingletons.txt', header=T)
 
 combine_pattern <- function(pattern) {
   new_pattern <- paste(
@@ -54,29 +54,56 @@ chr_window_pattern_vec <- chr_patterns %>%
 
 # color_pallete
 levels <- chr_window_pattern_vec$pattern %>% unique()
-myColors <- c(
-  "#8fb58d",
-  "#fab7d8",
-  "#b9ffde",
-  "#c6a1d1",
-  "#dae6ad",
-  "#a1a9df",
-  "#fbe0aa",
-  "#6bcfdb",
-  "#dd9c88",
-  "#9ef2ff",
-  "#d2b784",
-  "#d9d0ff",
-  "#abcb98",
-  "#ffd8e4",
-  "#6cb9aa",
-  "#ffd4cb",
-  "#d0faff",
-  "#a8af8f",
-  "#d3e7ff",
-  "#b7a8a4",
-  "#ffffea"
+
+# myColors <- c(
+#   "#E8B063",
+#   "#8CD2C6",
+#   "#FFFFA4",
+#   "#D3E2D9",
+#   "#D2A5BE",
+#   "#E7F9B8",
+#   "#9BA7C1",
+#   "#C6B2AB",
+#   "#F6BF4A",
+#   "#B2DE68",
+#   "#EACFCD",
+#   "#F7DBED",
+#   "#CEC2CD",
+#   "#BB7FBD",
+#   "#BFCECC",
+#   "#FA7F72",
+#   "#E9E07E",
+#   "#96BFC4",
+#   "#B1A5D6",
+#   "#EFE7C5",
+#   "#F6FD91"
+# )
+
+myColors<- c(
+  "#FA7F72",
+  "#E8B063",
+  "#F6BF4A",
+  "#C6B2AB",
+  "#CABABC",
+  "#CEC2CD",
+  "#9BA7C1",
+  "#96B5C2",
+  "#91C3C4",
+  "#8CD2C6",
+  "#B2DE68",
+  "#BFE47C",
+  "#CCEB90",
+  "#D9F2A3",
+  "#E7F9B8",
+  "#BB7FBD",
+  "#CA96C9",
+  "#D9ADD5",
+  "#E8C3E1",
+  "#F7DBED",
+  "#F6FD91"
 )
+
+myColors %>% sample() %>% scales::show_col()
 
 names(myColors) = levels
 
@@ -90,6 +117,7 @@ p1 <- ggplot(chr_window_pattern_vec %>%
   theme_pubr() + xlab('Position (Mb)') + ylab('Average Probability') +
   guides(fill=guide_legend(ncol=1)) + theme(legend.position='right') +
   scale_x_continuous(expand=c(0,0)) + scale_y_continuous(expand=c(0,0))
+p1
 ggsave(p1,filename='~/Downloads/test_byPosition.pdf', width=7,height=5)
 
 ## Combine Patterns no UUUUU
