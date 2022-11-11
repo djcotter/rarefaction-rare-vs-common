@@ -215,6 +215,7 @@ plot_patterns <- function(df_plot, colors=myColors, relative = FALSE) {
     geom_text_repel(aes(label=label), position=position_stack(vjust=0.5), 
                     xlim=c(df_plot %>% pull(g) %>% max() +10, NA), 
                     size=1.8, direction = "y",
+                    na.rm = TRUE,
                     segment.size=0.2, box.padding = 0.1,
                     force_pull=100, min.segment.length = 0.25) +
     theme_pubr(legend = 'right') +
@@ -250,7 +251,7 @@ p <- ggarrange(NULL, NULL, NULL, NULL,
                font.label = list(size=12),
                legend = "none")
 p
-ggsave(p, filename = opt$output, width = 190, height=170, units='mm')
+ggsave(p, filename = opt$output, width = 190, height=185, units='mm')
 
 legend1 <- get_legend(p1)
 legend2 <- get_legend(p2)
