@@ -210,7 +210,7 @@ plot_patterns <- function(df_plot, colors=myColors, relative = FALSE) {
                 mutate(label=ifelse(g==max_g, recolor, NA)) %>%
                 mutate(recolor=fct_relevel(recolor, pattern_levels)),
               aes(x=g, y=prob, fill=recolor)) +
-    geom_col(lwd=0.15, color='black') + 
+    geom_col(color='black', width=10, lwd=0.05) + 
     scale_fill_manual(values=plot_colors(colors, pattern_levels)) +
     geom_text_repel(aes(label=label), position=position_stack(vjust=0.5), 
                     xlim=c(df_plot %>% pull(g) %>% max() +10, NA), 
@@ -234,11 +234,22 @@ p1 <- plot_patterns(df_wSingletons)
 p2 <- plot_patterns(df_noSingletons)
 p3 <- plot_patterns(df_wSingletons_relative, relative=TRUE)
 p4 <- plot_patterns(df_noSingletons_relative, relative=TRUE)
-p <- ggarrange(p1, p2, p3, p4,
-               nrow = 2, ncol=2,
-               widths=c(1, 1),
-               labels="AUTO",
+p <- ggarrange(NULL, NULL, NULL, NULL,
+               NULL, p1, NULL, p2, 
+               NULL, NULL, NULL, NULL,
+               NULL, p3, NULL, p4,
+               nrow = 4, ncol=4,
+               widths=c(0, 1, 0, 1),
+               heights = c(0.06, 1,0.05,1),
+               labels=c('', '', '', '',
+                        '', 'A', '', 'B', 
+                        '', '', '', '',
+                        '', 'C', '', 'D'),
+               label.x = -0.01,
+               label.y = 1.075,
+               font.label = list(size=12),
                legend = "none")
+p
 ggsave(p, filename = opt$output, width = 190, height=170, units='mm')
 
 legend1 <- get_legend(p1)
