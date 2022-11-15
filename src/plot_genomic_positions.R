@@ -11,13 +11,13 @@ library(RColorBrewer)
 ## temp stuff
 setwd('~/Projects/rarefaction-project/')
 pop_label = "superpops"
-CHR = 6
+CHR = 22
 g = 500
 z = 0.05
 DROP_SINGLETONS = TRUE
 
 ## read in superpop data -----
-df <- read.table('~/Projects/rarefaction-project/data/patterns/6_g-500_pattern_byPosition_all-snps_noSingletons.txt', header=T)
+df <- read.table('~/Projects/rarefaction-project/data/patterns/22_g-500_pattern_byPosition_all-snps_noSingletons.txt', header=T)
 
 combine_pattern <- function(pattern) {
   new_pattern <- paste(
@@ -81,14 +81,14 @@ levels <- chr_window_pattern_vec$pattern %>% unique()
 
 myColors<- c(
   "#FA7F72",
-  "#E8B063",
   "#F6BF4A",
+  "#FBE3AF",
   "#C6B2AB",
   "#CABABC",
   "#CEC2CD",
-  "#9BA7C1",
-  "#96B5C2",
-  "#91C3C4",
+  "#44AE9B",
+  "#5CBAA9",
+  "#74C6B7",
   "#8CD2C6",
   "#B2DE68",
   "#BFE47C",
@@ -103,7 +103,7 @@ myColors<- c(
   "#F6FD91"
 )
 
-myColors %>% sample() %>% scales::show_col()
+myColors %>% scales::show_col()
 
 names(myColors) = levels
 
@@ -113,7 +113,7 @@ p1 <- ggplot(chr_window_pattern_vec %>%
                select(-pos) %>% 
                summarise(win_prob=sum(win_prob)), 
              aes(x=windows, y=win_prob, fill=pattern)) + 
-  geom_col() + scale_fill_manual('Pattern', values=myColors) + 
+  geom_col(width=win_size/1e6) + scale_fill_manual('Pattern', values=myColors) + 
   theme_pubr() + xlab('Position (Mb)') + ylab('Average Probability') +
   guides(fill=guide_legend(ncol=1)) + theme(legend.position='right') +
   scale_x_continuous(expand=c(0,0)) + scale_y_continuous(expand=c(0,0))
