@@ -17,7 +17,7 @@ z = 0.05
 DROP_SINGLETONS = TRUE
 
 ## read in superpop data -----
-df <- read.table('~/Projects/rarefaction-project/data/patterns/22_g-500_pattern_byPosition_all-snps_noSingletons.txt', header=T)
+df <- read.table('~/Projects/rarefaction-project/data/patterns/6_g-500_pattern_byPosition_all-snps_noSingletons.txt', header=T)
 
 combine_pattern <- function(pattern) {
   new_pattern <- paste(
@@ -114,11 +114,14 @@ p1 <- ggplot(chr_window_pattern_vec %>%
                summarise(win_prob=sum(win_prob)), 
              aes(x=windows, y=win_prob, fill=pattern)) + 
   geom_col(width=win_size/1e6) + scale_fill_manual('Pattern', values=myColors) + 
-  theme_pubr() + xlab('Position (Mb)') + ylab('Average Probability') +
+  theme_pubr() + xlab('Position (Mb)') + ylab('Probability') +
   guides(fill=guide_legend(ncol=1)) + theme(legend.position='right') +
-  scale_x_continuous(expand=c(0,0)) + scale_y_continuous(expand=c(0,0))
-p1
-ggsave(p1,filename='~/Downloads/test_byPosition.pdf', width=7,height=5)
+  scale_x_continuous(expand=c(0,0),limits=c(28,35)) + scale_y_continuous(expand=c(0,0)) +
+  guides(fill=guide_legend(ncol = 1, override.aes = list(color="black", lwd=0.1,width=1))) +
+  theme(legend.title = element_blank(), 
+        legend.text = element_text(size = 8),
+        legend.key.size = unit(0.55,"line"))
+ggsave(p1,filename='~/../Downloads/test_chr6_byPosition.pdf', width=140,height=75, units="mm")
 
 ## Combine Patterns no UUUUU
 chr_window_pattern_vec_noU <- chr_patterns %>% 
