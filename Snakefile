@@ -31,6 +31,18 @@ G_LIST = list(range(10,501,10))
 # global variables
 CHROMS = [x for x in range(1, 23)]  # list from 1 to 22
 
+# helper functions -----------------
+def plot_range(wildcards):
+    """
+    Function to analyze the range wildcard and define a flag
+    for the plotting scripts.
+    """
+    if wildcards.range == "wholeChr":
+        return("") 
+    else:
+        coords = wildcards.range.split("-")
+        return(f"--range {coords[0]}:{coords[1]}")
+
 # declare rules -------------------
 rule all:
     input:
@@ -43,9 +55,36 @@ rule all:
                       singletons="no",
                       sample_size="all",
                       ext="pdf"),
-        fig3 = expand(path.join('figures', '{chr}_pattern-match-probs_{sample_size}-snps.pdf'),
+        fig4 = expand(path.join('figures', '{chr}_pattern-match-probs_{sample_size}-snps.pdf'),
                       chr=22,
-                      sample_size="all")
+                      sample_size="all"),
+        fig5 = expand(path.join('figures', 
+                                '{chr}_g-{g}_pattern_byPosition_{sample_size}-snps'
+                                '_{singletons}Singletons_{range}.{ext}'),
+                      chr=22,
+                      g=500,
+                      sample_size="all",
+                      singletons="no",
+                      range="wholeChr",
+                      ext="pdf")
+        fig6a = expand(path.join('figures', 
+                                '{chr}_g-{g}_pattern_byPosition_{sample_size}-snps'
+                                '_{singletons}Singletons_{range}.{ext}'),
+                       chr=6,
+                       g=500,
+                       sample_size="all",
+                       singletons="no",
+                       range="20-40",
+                       ext="pdf"),
+        fig6b = expand(path.join('figures', 
+                                '{chr}_g-{g}_pattern_byPosition_{sample_size}-snps_{singletons}Singletons_{range}_byRank.{ext}'),
+                       chr=6,
+                       g=500,
+                       sample_size="all",
+                       singletons="no",
+                       range="20-40",
+                       ext="pdf")
+
 
 rule filter_raw_data:
     """
@@ -171,7 +210,7 @@ rule calculate_various_g_allele_patterns:
     This rule takes the allele counts table for a given chromosome and calculates the 
     five-letter super population patterns for each locus. It outputs the mean probability
     of each pattern across all snps analyzed. It can operate on the whole chromosome or
-    a subset of the chromosome size.
+    a subsample of the chromosome size.
     """
     input:
         path.join('data', 'allele_counts', 'chr{chr}_counts_superpops.txt')
@@ -192,6 +231,28 @@ rule calculate_various_g_allele_patterns:
     shell:
         "Rscript --vanilla {params.script} --chr {params.chr} --threshold {params.threshold} "
         "--sample {params.sample} --ncores {params.cores} {params.singletons}"
+
+rule calculate_allele_patterns_byPosition:
+    """
+    This rule takes the allele counts table for a given chromosome and calculates the 
+    five-letter super population patterns for each locus. It outputs the probability
+    of each pattern for all snps analyzed. It can operate on the whole chromosome or
+    a subsample of the chromosome size.
+    """
+    input:
+        path.join('data', 'allele_counts', 'chr{chr}_counts_superpops.txt')
+    params:
+        script = path.join('src', 'calculate_superpop_allele_patterns_byPosition.R'),
+        chr = lambda wildcards: wildcards.chr,
+        threshold = 0.05,
+        sample = lambda wildcards: 0 if wildcards.sample_size == 'all' else wildcards.sample_size,
+        singletons = lambda wildcards: '--drop-singletons' if wildcards.singletons == "no" else '',
+        g = lambda wildcards: wildcards.g
+    output:
+        path.join('data', 'patterns', '{chr}_g-{g}_pattern_byPosition_{sample_size}-snps_{singletons}Singletons.txt')
+    shell:
+        "Rscript --vanilla {params.script} --chr {params.chr} --threshold {params.threshold} "
+        "--sample {params.sample} --g_size {paramgs.g} {params.singletons}"
 
 rule prepare_network_data:
     """
@@ -263,3 +324,40 @@ rule plot_match_rate:
     shell:
         "Rscript --vanilla {params.script} --wSingletons {input.wSingletons} "
         "--noSingletons {input.noSingletons} --output {output}"
+
+rule plot_probs_byPosition:
+    """
+    Takes a file with probabilities across a chromosome and recodes the patterns as summaries.
+    Then plots the mean probabilities of these summaries in 100kb windows across the chromosome
+    or across a designated range.
+    """
+    input:
+        path.join('data', 'patterns', '{chr}_g-{g}_pattern_byPosition_{sample_size}-snps_{singletons}Singletons.txt')
+    params:
+        script = path.join('src', 'plot_genomic_positions.R'),
+        plot_range = plot_range
+    output:
+        path.join('figures', '{chr}_g-{g}_pattern_byPosition_{sample_size}-snps_{singletons}Singletons_{range}.{ext}')
+    shell:
+        "Rscript --vanilla {params.script} --input {input} "
+        "--output {output} {params.plot_range}"
+
+rule plot_ranks_byPosition:
+    """
+    Takes a file with probabilities across a chromosome and recodes the patterns as summaries.
+    Then plots the ranks of these summaries in each 100kb window across the chromosome
+    or across a designated range.
+    """
+    input:
+        path.join('data', 'patterns', '{chr}_g-{g}_pattern_byPosition_{sample_size}-snps_{singletons}Singletons.txt')
+    params:
+        script = path.join('src', 'plot_genomic_positions_ranks.R'),
+        plot_range = plot_range,
+        rank_cutoff = 2
+    output:
+        path.join('figures',
+                  '{chr}_g-{g}_pattern_byPosition_{sample_size}-snps_{singletons}Singletons_{range}_byRank.{ext}')
+    shell:
+        "Rscript --vanilla {params.script} --input {input} "
+        "--output {output} --rank_cutoff {params.rank_cutoff} "
+        "{params.plot_range}"

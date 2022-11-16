@@ -18,7 +18,10 @@ option_list <- list(
               help = "output figure. Uses regular ggsave extensions"),
   make_option(c("--range"),
               type = "character", default = NULL,
-              help = "define an integer range in which to plot the figure as START:STOP")
+              help = "define an integer range in which to plot the figure as START:STOP"),
+  make_option(c("--rank_cutoff"),
+              type="numeric", default =2,
+              help = "only color ranks that ever appear at or above this cutoff in the range")
 )
 
 opt_parser = OptionParser(option_list=option_list)
@@ -32,6 +35,9 @@ if ( is.null(opt$input) | is.null(opt$output) ) {
 ## define window size and annotation -------
 win_size_txt = '100kb'
 win_size = 100000
+
+## define how many of the top ranks to color ------
+RANK_COLOR_CUTOFF = opt$rankCutoff
 
 ## read in superpop data -----
 chr_patterns <- read.table(opt$input, header=T)
@@ -52,12 +58,22 @@ combine_pattern <- function(pattern) {
   return(new_pattern)
 }
 
+## define plot limits
+if (is.null(opt$range)) {
+  plot_limits = NULL
+} else {
+  plot_range = stringr::str_split(opt$range, ":", n=2)[[1]]
+  plot_limits = c(as.numeric(plot_range)[1], as.numeric(plot_range[2]))
+}
+
 # set the size of the windows here
 windows <- (plyr::round_any(chr_patterns$pos - (min(chr_patterns$pos)-1),win_size,f=ceiling) - win_size/2)/1e6
 chr_patterns$windows <- windows
 
 ## Combine Patterns into ordered triples
-chr_window_pattern_vec <- chr_patterns %>% 
+chr_window_pattern_ranks <- chr_patterns %>% 
+  filter(pattern!='UUUUU') %>%
+  mutate(pattern=combine_pattern(pattern)) %>%
   dplyr::group_by(windows) %>% 
   mutate(win_sum = sum(prob)) %>% 
   ungroup() %>% group_by(windows, pattern) %>% 
@@ -65,7 +81,15 @@ chr_window_pattern_vec <- chr_patterns %>%
   ungroup() %>% mutate(win_prob = pattern_sum/ win_sum) %>% 
   distinct(pattern, windows, .keep_all = T) %>% 
   select(-pattern_sum, -prob, -win_sum) %>% 
-  mutate(pattern=combine_pattern(pattern))
+  group_by(windows) %>% 
+  mutate(pattern_rank = dense_rank(desc(win_prob))) %>% 
+  arrange(windows, pattern_rank)
+
+## filter the data to fit in the plot range
+if (!is.null(opt$plot_limits)) {
+  chr_window_pattern_ranks <- chr_window_pattern_ranks %>%
+    filter(windows >= plot_limits[1] & windows <= plot_limits[2])
+} 
 
 ## color_pallete -----------
 myColors <- c(
@@ -96,30 +120,38 @@ names(myColors) = c(
   "(5,0,0)"
 )
 
-## define plot limits
-if (is.null(opt$range)) {
-  plot_limits = NULL
-} else {
-  plot_range = stringr::str_split(opt$range, ":", n=2)[[1]]
-  plot_limits = c(as.numeric(plot_range)[1], as.numeric(plot_range[2]))
-}
+# drop the color for (5,0,0)
+myColors <- myColors[-21]
 
-## plot genomic positions -----
-p1 <- ggplot(chr_window_pattern_vec %>% 
-               mutate(pattern=factor(pattern,levels=levels)) %>% 
-               group_by(pattern,windows) %>% 
-               select(-pos) %>% 
-               summarise(win_prob=sum(win_prob)), 
-             aes(x=windows, y=win_prob, fill=pattern)) + 
-  geom_col(width=win_size/1e6) + scale_fill_manual('Pattern', values=myColors) + 
-  theme_pubr() + xlab('Position (Mb)') + ylab('Probability') +
-  guides(fill=guide_legend(ncol=1)) + theme(legend.position='right') +
-  scale_x_continuous(expand=c(0,0),limits=plot_limits) + scale_y_continuous(expand=c(0,0)) +
-  guides(fill=guide_legend(ncol = 1, override.aes = list(color="black", lwd=0.1,width=1))) +
+# redefine vectors for the top ranked colors
+patterns_to_color = chr_window_pattern_ranks %>% filter(pattern_rank <= RANK_COLOR_CUTOFF) %>% pull(pattern) %>% unique()
+all_patterns = chr_window_pattern_ranks %>% pull(pattern) %>% unique()
+pattern_vec = c(patterns_to_color, all_patterns[!(all_patterns %in% patterns_to_color)])
+color_vec = c(myColors[patterns_to_color], 
+              rep("#D3D3D3", 20-length(patterns_to_color)))
+alpha_vec = c(rep(1, length(patterns_to_color)),
+              rep(0.075, 20-length(patterns_to_color))) 
+lwd_vec = c(rep(0.7, length(patterns_to_color)),
+            rep(0.3, 20-length(patterns_to_color))) 
+
+## plot ranks
+p_rank <- ggplot(chr_window_pattern_ranks %>%
+                   mutate(pattern_rank=fct_rev(as.factor(as.numeric(pattern_rank)))), 
+                 aes(x=windows, y=pattern_rank)) + 
+  geom_line(aes(group=pattern, color=pattern, alpha=pattern, lwd=pattern)) +
+  scale_color_manual("Pattern", breaks=pattern_vec[1:length(patterns_to_color)], values=color_vec) +
+  scale_alpha_manual(breaks=pattern_vec, values=alpha_vec, guide="none") +
+  scale_size_manual(breaks=pattern_vec, values=lwd_vec, guide="none") +
+  xlab('Position (Mb)') +
+  ylab('Rank') +
+  theme_pubr(legend = "right") + scale_y_discrete(breaks=c(20,15,10,5,1), expand=c(0,0.2)) +
+  scale_x_continuous(expand=c(0,0),limits=plot_limits) +
+  guides(fill=guide_legend(ncol = 1)) +
   theme(legend.title = element_blank(), 
         legend.text = element_text(size = 8),
         legend.key.size = unit(0.55,"line"))
 
-## save the file to output as a 1.5 column width
-ggsave(p1,filename=opt$output, width=140,height=75, units="mm")
+## save the plot -----------
+ggsave(p_rank,filename = opt$output, 
+       width = 140, height=45, units='mm')
 
