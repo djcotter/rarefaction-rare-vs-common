@@ -106,7 +106,7 @@ myColors <- c(
   "#F6FD91"
 )
 
-names(myColors) = c(
+levels = c(
   "(0,0,5)", "(0,1,4)",
   "(1,0,4)", "(0,2,3)",
   "(1,1,3)", "(2,0,3)",
@@ -120,8 +120,11 @@ names(myColors) = c(
   "(5,0,0)"
 )
 
+names(myColors) <- levels
+
 # drop the color for (5,0,0)
 myColors <- myColors[-21]
+levels <- levels[-21]
 
 # redefine vectors for the top ranked colors
 patterns_to_color = chr_window_pattern_ranks %>% filter(pattern_rank <= RANK_COLOR_CUTOFF) %>% pull(pattern) %>% unique()

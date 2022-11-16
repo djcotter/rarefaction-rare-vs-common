@@ -82,7 +82,7 @@ myColors <- c(
   "#F6FD91"
 )
 
-names(myColors) = c(
+levels = c(
   "(0,0,5)", "(0,1,4)",
   "(1,0,4)", "(0,2,3)",
   "(1,1,3)", "(2,0,3)",
@@ -95,6 +95,8 @@ names(myColors) = c(
   "(3,2,0)", "(4,1,0)",
   "(5,0,0)"
 )
+
+names(myColors) = levels
 
 ## define plot limits
 if (is.null(opt$range)) {
