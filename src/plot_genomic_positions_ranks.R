@@ -89,7 +89,9 @@ chr_window_pattern_ranks <- chr_patterns %>%
 if (!is.null(plot_limits)) {
   chr_window_pattern_ranks <- chr_window_pattern_ranks %>%
     filter(windows >= plot_limits[1] & windows <= plot_limits[2])
-} 
+} else {
+  plot_limits = c(0, max(chr_window_pattern_ranks$windows))
+}
 
 ## color_pallete -----------
 myColors <- c(
@@ -120,6 +122,8 @@ levels = c(
   "(5,0,0)"
 )
 
+
+
 names(myColors) <- levels
 
 # drop the color for (5,0,0)
@@ -138,6 +142,14 @@ lwd_vec = c(rep(0.7, length(patterns_to_color)),
             rep(0.3, 20-length(patterns_to_color))) 
 
 ## plot ranks
+all_breaks=seq(20,1,-1)
+my_breaks=c(20,15,10,5,1)
+my_labels <- sapply(all_breaks, function(x){ ifelse(x%in%my_breaks,x,"") })
+
+x_breaks = seq(plyr::round_any(min(chr_window_pattern_ranks$windows),10,f=floor),
+               plyr::round_any(max(chr_window_pattern_ranks$windows),10, f=floor),
+               10)
+
 p_rank <- ggplot(chr_window_pattern_ranks %>%
                    mutate(pattern_rank=fct_rev(as.factor(as.numeric(pattern_rank)))), 
                  aes(x=windows, y=pattern_rank)) + 
@@ -147,8 +159,9 @@ p_rank <- ggplot(chr_window_pattern_ranks %>%
   scale_size_manual(breaks=pattern_vec, values=lwd_vec, guide="none") +
   xlab('Position (Mb)') +
   ylab('Rank') +
-  theme_pubr(legend = "right") + scale_y_discrete(breaks=c(20,15,10,5,1), expand=c(0,0.2)) +
-  scale_x_continuous(expand=c(0,0),limits=plot_limits) +
+  theme_pubr(legend = "right") + 
+  scale_y_discrete(breaks=all_breaks, labels=my_labels, expand=c(0,0)) +
+  scale_x_continuous(expand=c(0,0),limits=plot_limits, breaks=x_breaks) +
   guides(fill=guide_legend(ncol = 1)) +
   theme(legend.title = element_blank(), 
         legend.text = element_text(size = 8),
