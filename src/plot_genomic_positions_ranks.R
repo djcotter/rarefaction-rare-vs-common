@@ -199,7 +199,7 @@ plot_ranks <- function(df,p_limits=plot_limits,plot_colors=myColors,plot_levels=
     xlab('Position (Mb)') +
     ylab('Rank') +
     theme_pubr(legend = "right") + 
-    scale_y_discrete(breaks=all_breaks, labels=my_labels, expand=c(0,0)) +
+    scale_y_discrete(breaks=all_breaks, labels=my_labels, expand=c(0,0.2)) +
     scale_x_continuous(expand=c(0,0),limits=p_limits, breaks=x_breaks) +
     guides(fill=guide_legend(ncol = 1)) +
     theme(legend.title = element_blank(), 
