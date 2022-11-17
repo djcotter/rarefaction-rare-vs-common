@@ -58,42 +58,24 @@ rule all:
         fig4 = expand(path.join('figures', '{chr}_pattern-match-probs_{sample_size}-snps.pdf'),
                       chr=22,
                       sample_size="all"),
-        fig5a = expand(path.join('figures', 
-                                 '{chr}_g-{g}_pattern_byPosition_100kb-windows_{sample_size}-snps'
-                                 '_{singletons}Singletons_{range}.{ext}'),
-                       chr=22,
-                       g=500,
-                       sample_size="all",
-                       singletons="no",
-                       range="wholeChr",
-                       ext="pdf"),
-        fig5b = expand(path.join('figures', 
-                                 '{chr}_g-{g}_pattern_byPosition_byRank_100kb-windows_{sample_size}-snps'
-                                 '_{singletons}Singletons_{range}.{ext}'),
-                       chr=22,
-                       g=500,
-                       sample_size="all",
-                       singletons="no",
-                       range="wholeChr",
-                       ext="pdf"),
-        fig6a = expand(path.join('figures', 
-                                '{chr}_g-{g}_pattern_byPosition_100kb-windows_{sample_size}-snps'
-                                '_{singletons}Singletons_{range}.{ext}'),
-                       chr=6,
-                       g=500,
-                       sample_size="all",
-                       singletons="no",
-                       range="20-40",
-                       ext="pdf"),
-        fig6b = expand(path.join('figures', 
+        fig5 = expand(path.join('figures', 
                                 '{chr}_g-{g}_pattern_byPosition_byRank_100kb-windows_{sample_size}-snps'
                                 '_{singletons}Singletons_{range}.{ext}'),
-                       chr=6,
-                       g=500,
-                       sample_size="all",
-                       singletons="no",
-                       range="20-40",
-                       ext="pdf")
+                      chr=22,
+                      g=500,
+                      sample_size="all",
+                      singletons="no",
+                      range="wholeChr",
+                      ext="pdf"),
+        fig6 = expand(path.join('figures', 
+                                '{chr}_g-{g}_pattern_byPosition_byRank_100kb-windows_{sample_size}-snps'
+                                '_{singletons}Singletons_{range}.{ext}'),
+                      chr=6,
+                      g=500,
+                      sample_size="all",
+                      singletons="no",
+                      range="20-40",
+                      ext="pdf")
 
 
 rule filter_raw_data:
@@ -335,27 +317,10 @@ rule plot_match_rate:
         "Rscript --vanilla {params.script} --wSingletons {input.wSingletons} "
         "--noSingletons {input.noSingletons} --output {output}"
 
-rule plot_probs_byPosition:
-    """
-    Takes a file with probabilities across a chromosome and recodes the patterns as summaries.
-    Then plots the mean probabilities of these summaries in 100kb windows across the chromosome
-    or across a designated range.
-    """
-    input:
-        path.join('data', 'patterns', '{chr}_g-{g}_pattern_byPosition_{sample_size}-snps_{singletons}Singletons.txt')
-    params:
-        script = path.join('src', 'plot_genomic_positions.R'),
-        plot_range = plot_range
-    output:
-        path.join('figures', '{chr}_g-{g}_pattern_byPosition_100kb-windows_{sample_size}-snps_{singletons}Singletons_{range}.{ext}')
-    shell:
-        "Rscript --vanilla {params.script} --input {input} "
-        "--output {output} {params.plot_range}"
-
 rule plot_ranks_byPosition:
     """
     Takes a file with probabilities across a chromosome and recodes the patterns as summaries.
-    Then plots the ranks of these summaries in each 100kb window across the chromosome
+    Then plots the averages and ranks of these summaries in each 100kb window across the chromosome
     or across a designated range.
     """
     input:
