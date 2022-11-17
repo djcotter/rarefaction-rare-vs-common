@@ -37,7 +37,7 @@ win_size_txt = '100kb'
 win_size = 100000
 
 ## define how many of the top ranks to color ------
-RANK_COLOR_CUTOFF = opt$rankCutoff
+RANK_COLOR_CUTOFF = opt$rank_cutoff
 
 ## read in superpop data -----
 chr_patterns <- read.table(opt$input, header=T)
@@ -86,7 +86,7 @@ chr_window_pattern_ranks <- chr_patterns %>%
   arrange(windows, pattern_rank)
 
 ## filter the data to fit in the plot range
-if (!is.null(opt$plot_limits)) {
+if (!is.null(plot_limits)) {
   chr_window_pattern_ranks <- chr_window_pattern_ranks %>%
     filter(windows >= plot_limits[1] & windows <= plot_limits[2])
 } 
@@ -157,4 +157,3 @@ p_rank <- ggplot(chr_window_pattern_ranks %>%
 ## save the plot -----------
 ggsave(p_rank,filename = opt$output, 
        width = 140, height=45, units='mm')
-

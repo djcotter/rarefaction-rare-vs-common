@@ -59,16 +59,16 @@ rule all:
                       chr=22,
                       sample_size="all"),
         fig5 = expand(path.join('figures', 
-                                '{chr}_g-{g}_pattern_byPosition_{sample_size}-snps'
+                                '{chr}_g-{g}_pattern_byPosition_100kb-windows_{sample_size}-snps'
                                 '_{singletons}Singletons_{range}.{ext}'),
                       chr=22,
                       g=500,
                       sample_size="all",
                       singletons="no",
                       range="wholeChr",
-                      ext="pdf")
+                      ext="pdf"),
         fig6a = expand(path.join('figures', 
-                                '{chr}_g-{g}_pattern_byPosition_{sample_size}-snps'
+                                '{chr}_g-{g}_pattern_byPosition_100kb-windows_{sample_size}-snps'
                                 '_{singletons}Singletons_{range}.{ext}'),
                        chr=6,
                        g=500,
@@ -77,7 +77,8 @@ rule all:
                        range="20-40",
                        ext="pdf"),
         fig6b = expand(path.join('figures', 
-                                '{chr}_g-{g}_pattern_byPosition_{sample_size}-snps_{singletons}Singletons_{range}_byRank.{ext}'),
+                                '{chr}_g-{g}_pattern_byPosition_byRank_100kb-windows_{sample_size}-snps'
+                                '_{singletons}Singletons_{range}.{ext}'),
                        chr=6,
                        g=500,
                        sample_size="all",
@@ -337,7 +338,7 @@ rule plot_probs_byPosition:
         script = path.join('src', 'plot_genomic_positions.R'),
         plot_range = plot_range
     output:
-        path.join('figures', '{chr}_g-{g}_pattern_byPosition_{sample_size}-snps_{singletons}Singletons_{range}.{ext}')
+        path.join('figures', '{chr}_g-{g}_pattern_byPosition_100kb-windows_{sample_size}-snps_{singletons}Singletons_{range}.{ext}')
     shell:
         "Rscript --vanilla {params.script} --input {input} "
         "--output {output} {params.plot_range}"
@@ -356,7 +357,7 @@ rule plot_ranks_byPosition:
         rank_cutoff = 2
     output:
         path.join('figures',
-                  '{chr}_g-{g}_pattern_byPosition_{sample_size}-snps_{singletons}Singletons_{range}_byRank.{ext}')
+                  '{chr}_g-{g}_pattern_byPosition_byRank_100kb-windows_{sample_size}-snps_{singletons}Singletons_{range}.{ext}')
     shell:
         "Rscript --vanilla {params.script} --input {input} "
         "--output {output} --rank_cutoff {params.rank_cutoff} "
