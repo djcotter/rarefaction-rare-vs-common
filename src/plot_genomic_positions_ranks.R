@@ -67,7 +67,9 @@ if (is.null(opt$range)) {
 }
 
 # set the size of the windows here
-windows <- (plyr::round_any(chr_patterns$pos - (min(chr_patterns$pos)-1),win_size,f=ceiling) - win_size/2)/1e6
+windows <- (plyr::round_any(chr_patterns$pos,
+                            win_size,
+                            f=ceiling))/1e6
 chr_patterns$windows <- windows
 
 ## Combine Patterns into ordered triples -- for averages
@@ -131,7 +133,7 @@ names(myColors) <- levels
 plot_averages <- function(df, p_limits=plot_limits,
                           plot_colors=myColors,plot_levels=levels) {
   if (is.null(p_limits)) {
-    p_limits = c(0,max(df$windows)+0.05)
+    p_limits =  c(plyr::round_any(min(df$windows),10,f=floor),max(df$windows)+0.05)
   }
   
   x_breaks = seq(plyr::round_any(min(df$windows),10, f=floor),
@@ -164,7 +166,7 @@ plot_ranks <- function(df,p_limits=plot_limits,plot_colors=myColors,plot_levels=
     df <- df %>%
       filter(windows >= p_limits[1] & windows <= p_limits[2])
   } else {
-    p_limits = c(0,max(df$windows)+0.05)
+    p_limits = c(plyr::round_any(min(df$windows),10,f=floor),max(df$windows)+0.05)
   }
   
   # drop the color for (5,0,0)
