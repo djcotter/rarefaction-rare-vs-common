@@ -161,7 +161,7 @@ plot_averages <- function(df, p_limits=plot_limits,
 plot_ranks <- function(df,p_limits=plot_limits,plot_colors=myColors,plot_levels=levels) {
   ## filter the rank data to fit in the plot range
   if (!is.null(p_limits)) {
-    chr_window_pattern_ranks <- chr_window_pattern_ranks %>%
+    df <- df %>%
       filter(windows >= p_limits[1] & windows <= p_limits[2])
   } else {
     p_limits = c(0,max(df$windows)+0.05)
