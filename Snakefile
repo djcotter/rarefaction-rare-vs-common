@@ -75,6 +75,15 @@ rule all:
                       sample_size="all",
                       singletons="no",
                       range="20-40",
+                      ext="pdf"),
+        fig7 = expand(path.join('figures', 
+                                '{chr}_g-{g}_pattern_byPosition_byRank_100kb-windows_{sample_size}-snps'
+                                '_{singletons}Singletons_{range}.{ext}'),
+                      chr=15,
+                      g=500,
+                      sample_size="all",
+                      singletons="no",
+                      range="40-50",
                       ext="pdf")
 
 
@@ -244,7 +253,7 @@ rule calculate_allele_patterns_byPosition:
         path.join('data', 'patterns', '{chr}_g-{g}_pattern_byPosition_{sample_size}-snps_{singletons}Singletons.txt')
     shell:
         "Rscript --vanilla {params.script} --chr {params.chr} --threshold {params.threshold} "
-        "--sample {params.sample} --g_size {paramgs.g} {params.singletons}"
+        "--sample {params.sample} --g_size {params.g} {params.singletons}"
 
 rule prepare_network_data:
     """
