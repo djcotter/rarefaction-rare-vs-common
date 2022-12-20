@@ -23,5 +23,3 @@ conda activate snakemake_default
 snakemake -j 1
 ```
 It can be parallelized by changing `j>1` and/or via using cluster submission commands.
-
-### Steps of the workflow
