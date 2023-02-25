@@ -78,7 +78,7 @@ df_long <- df %>%
   mutate(minor = as.integer(minor), major = as.integer(major))
 
 # drop all snps where all populations do not have at least max_g alleles
-max_g_list <- max(g_list)
+max_g_list <- 500
 drop_max_g <- df_long %>% filter(minor+major<max_g_list) %>% pull(pos) %>% unique()
 df_long <- df_long %>% filter(!(pos %in% drop_max_g))
 
@@ -168,7 +168,6 @@ merge_codes <- function(..., log = FALSE, patterns) {
 }
 
 # iterate over g list
-g <- g_list[i]
 print(g)
 # calculate lookup matrices for R and U
 U_mat <- u_matrix(df_long$minor, df_long$major, g)
