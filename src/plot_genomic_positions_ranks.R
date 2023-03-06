@@ -1,5 +1,5 @@
-# calculate_allele_patterns.R
-# script to take allele counts per locus and calculate the probability of the observed pattern
+# plot_genomic_positions_ranks.R
+# script to take patterns per position and calculate windowed probabilities and ranks across a range
 # Daniel Cotter
 
 ## load packages -------

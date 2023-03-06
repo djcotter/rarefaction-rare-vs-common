@@ -76,15 +76,18 @@ rule all:
                       singletons="no",
                       range="20-40",
                       ext="pdf"),
-        fig7 = expand(path.join('figures', 
-                                '{chr}_g-{g}_pattern_byPosition_byRank_100kb-windows_{sample_size}-snps'
-                                '_{singletons}Singletons_{range}.{ext}'),
-                      chr=15,
-                      g=500,
-                      sample_size="all",
-                      singletons="no",
-                      range="40-50",
-                      ext="pdf")
+        figS1 = expand(path.join('figures', 
+                                 'all_chrs_{sample_size}-snps_g-{g}_{singletons}Singletons_byPosition.{ext}'),
+                       g=500,
+                       sample_size="all",
+                       singletons="no",
+                       ext="pdf"),
+        figS2 = expand(path.join('figures',
+                                 'all_chrs_{sample_size}-snps_g-{g}_{singletons}Singletons_summary.{ext}'),
+                       sample_size="all",
+                       g=500,
+                       singletons="no",
+                       ext="pdf")
 
 
 rule filter_raw_data:
@@ -345,3 +348,38 @@ rule plot_ranks_byPosition:
         "Rscript --vanilla {params.script} --input {input} "
         "--output {output} --rank_cutoff {params.rank_cutoff} "
         "{params.plot_range}"
+
+rule summarise_all_chrs_byPosition:
+    """
+    Take the pattern by position files for each chromosome for a specified g and 
+    plot a figure with all chromosomes as well as output a summary table for
+    all chromosomes
+    """
+    input:
+        expand(path.join('data', 'patterns', 
+                         '{chr}_g-{{g}}_pattern_byPosition_{{sample_size}}-snps_{{singletons}}Singletons.txt'),
+                         chr=CHROMS)
+    params:
+        script = path.join('src', 'plot_all_chrs_by_position.R'),
+        input_prefix = lambda wildcards: f'data/patterns/[]_g-{wildcards.g}_pattern_byPosition_{wildcards.sample_size}-snps_{wildcards.singletons}Singletons.txt',
+        output_prefix = lambda wildcards: f'figures/all_chrs_{wildcards.sample_size}-snps_g-{wildcards.g}_{wildcards.singletons}Singletons'
+    output:
+        plot = path.join('figures', 'all_chrs_{sample_size}-snps_g-{g}_{singletons}Singletons_byPosition.pdf'),
+        table = path.join('figures', 'all_chrs_{sample_size}-snps_g-{g}_{singletons}Singletons_summaryTable.txt')
+    shell:
+        "Rscript --vanilla {params.script} --input {params.input_prefix} "
+        "--output {params.output_prefix} --ext pdf"
+
+rule summarise_all_chrs_byChr:
+    """
+    Takes the table output of the previous rule and plots it analogously to 
+    the plots by g where g is now each chromosome
+    """
+    input:
+        path.join('figures', 'all_chrs_{sample_size}-snps_g-{g}_{singletons}Singletons_summaryTable.txt')
+    params:
+        script = path.join('src', 'plot_all_chrs_summary.R')
+    output:
+        path.join('figures', 'all_chrs_{sample_size}-snps_g-{g}_{singletons}Singletons_summary.{ext}')
+    shell:
+        "Rscript --vanilla {params.script} --input {input} --output {output}"
