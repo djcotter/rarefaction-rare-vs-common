@@ -34,14 +34,18 @@ win_size = 100000
 
 ## define how many of the top ranks to color ------
 RANK_COLOR_CUTOFF = opt$rank_cutoff
-plot_limits = c(0,250)
+p_limits = c(0,250)
 
 df_summary <- NULL
 plot_list <- NULL
 # loop over all chromosomes
-for (i in 1:22) {
+# use i in c(1:22, "X", "Y") for sex chromosomes
+for (i in c(1:22)) {
     ## read in superpop data for chr i -----
     chrom_input <- str_replace(opt$input, '\\[\\]', as.character(i))
+    if (i=="Y") {
+      chrom_input <- str_replace(chrom_input, 'g-\\d+', 'g-150')
+    }
     chr_patterns <- read.table(chrom_input, header=T)
 
     ## Define combine pattern function -------
@@ -114,7 +118,7 @@ for (i in 1:22) {
         p_limits =  c(plyr::round_any(min(df$windows),10,f=floor),max(df$windows)+0.05)
     }
     
-    x_breaks = seq(0, plyr::round_any(max(df_)), 10)
+    x_breaks = seq(0, plyr::round_any(max(df$windows),10,f=ceiling), 10)
     
     p1 <- ggplot(df %>% 
                     mutate(pattern=factor(pattern,levels=plot_levels)) %>% 
@@ -156,19 +160,27 @@ for (i in seq_along(plot_list)) {
   if (i %in% 1:8) {
     plot_list[[i]] <- plot_list[[i]] + 
       scale_x_continuous(expand=c(0,0),limits=c(0,290),breaks=seq(0,290,10))
-  } else {
+  } else if (i %in% 9:22) {
     plot_list[[i]] <- plot_list[[i]] + 
       scale_x_continuous(expand=c(0,0),limits=c(0,140),breaks=seq(0,140,10))
+  } else if (i==23) {
+    plot_list[["X"]] <- plot_list[[i]] + 
+      scale_x_continuous(expand=c(0,0),limits=c(0,170),breaks=seq(0,170,10))
+  } else {
+    plot_list[["Y"]] <- plot_list[[i]] + 
+      scale_x_continuous(expand=c(0,0),limits=c(0,110),breaks=seq(0,110,10))
   }
 }
 
 joint_legend <- get_legend(plot_list[[1]], position = "right")
 group1 <- ggarrange(plotlist = plot_list[1:8], ncol = 1, align="v", legend="none")
 group2 <- ggarrange(plotlist = plot_list[9:22], ncol=2, nrow=7, align="hv", legend="none")
-p <- ggarrange(group1, group2, ncol=1, align="v", legend.grob = joint_legend, legend="right")
-#p <- ggarrange(plotlist=plot_list, ncol=1, align="v", common.legend=T, legend="right")
+#group3 <- ggarrange(plotlist = plot_list[23:24], ncol=2, nrow=1, widths=c(174/290,116/290), align="h", legend="none")
+p <- ggarrange(group1, group2, ncol=1, align="v", heights=c(1,7/8), legend.grob = joint_legend, legend="right")
+#p <- ggarrange(group1, group2, group3, ncol=1, align="v", heights=c(1,7/8,1/8))
+
 
 scalar = 1.5
-ggsave(p, filename=paste(opt$output, "_byPosition.", opt$ext, sep=""), height=11*scalar, width=8.3*scalar, units="in")
+ggsave(p, filename=paste(opt$output, "_byPosition.", opt$ext, sep=""), height=11*scalar, width=8.2*scalar, units="in")
 
 write.table(df_summary, file=paste(opt$output, '_summaryTable.txt', sep=""), sep='\t', quote=FALSE, row.names=FALSE, col.names=TRUE)
