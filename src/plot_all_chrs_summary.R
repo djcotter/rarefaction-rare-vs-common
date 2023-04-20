@@ -47,30 +47,27 @@ levels <- df %>%
   c('Other', .)
 
 myColors <- c(
-  "#E8B063",
-  "#8CD2C6",
-  "#FFFFA4",
-  "#D3E2D9",
-  "#D2A5BE",
-  "#E7F9B8",
-  "#9BA7C1",
-  "#C6B2AB",
-  "#F6BF4A",
-  "#B2DE68",
-  "#EACFCD",
-  "#F7DBED",
-  "#CEC2CD",
-  "#BB7FBD",
-  "#BFCECC",
-  "#FA7F72",
-  "#E9E07E",
-  "#96BFC4",
-  "#B1A5D6",
-  "#EFE7C5",
-  "#F6FD91"
+  "Other":"#8CD2C6",
+  "URRUU":"#FFFFA4",
+  "CCCRC":"#D3E2D9",
+  "RCCCC":"#D2A5BE",
+  "CRRRR":"#E7F9B8",
+  "RRUUR":"#9BA7C1",
+  "UURRU":"#C6B2AB",
+  "URRUR":"#F6BF4A",
+  "RRRUR":"#B2DE68",
+  "URRRR":"#EACFCD",
+  "URUUR":"#F7DBED",
+  "URUUU":"#CEC2CD",
+  "CCCCC":"#BB7FBD",
+  "UUUUR":"#BFCECC",
+  "UURUU":"#FA7F72",
+  "UUURU":"#E9E07E",
+  "RUUUR":"#96BFC4",
+  "RUUUU":"#B1A5D6",
+  "RRRRR":"#EFE7C5",
+  "UUUUU":"#F6FD91"
 )
-myColors <- myColors[1:19]
-names(myColors) <- levels
 
 p <- ggplot(df %>% 
               mutate(chr=as.numeric(chr)) %>%

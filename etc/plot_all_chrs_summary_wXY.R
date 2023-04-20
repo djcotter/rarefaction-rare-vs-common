@@ -31,9 +31,6 @@ df <- df %>% rename(`23`="X", `26`="Y")
 df <- df %>% pivot_longer(cols=`1`:`26`) %>%
   rename(chr=name, prob=value)
 
-df <- df %>% pivot_longer(cols=`1`:`22`) %>%
-  rename(chr=name, prob=value)
-
 keep <- df %>% filter(chr %in% 1:22) %>% filter(prob>0.01) %>% pull(pattern) %>% unique()
 
 recolor_patterns <- function(pattern, keep) {
@@ -51,8 +48,30 @@ levels <- df %>%
   levels() %>%
   c('Other', .)
 
+myNames <- c(
+  "Other",
+  "URRUU",
+  "CCCRC",
+  "RCCCC",
+  "CRRRR",
+  "RRUUR",
+  "UURRU",
+  "URRUR",
+  "RRRUR",
+  "URRRR",
+  "URUUR",
+  "URUUU",
+  "CCCCC",
+  "UUUUR",
+  "UURUU",
+  "UUURU",
+  "RUUUR",
+  "RUUUU",
+  "RRRRR",
+  "UUUUU"
+)
+
 myColors <- c(
-  "#E8B063",
   "#8CD2C6",
   "#FFFFA4",
   "#D3E2D9",
@@ -74,8 +93,8 @@ myColors <- c(
   "#EFE7C5",
   "#F6FD91"
 )
-myColors <- myColors[1:19]
-names(myColors) <- levels
+
+names(myColors) <- myNames
 
 p <- ggplot(df %>% 
               mutate(chr=as.numeric(chr)) %>%
